@@ -1,6 +1,6 @@
 CREATE TABLE `battles` (
 	`id` integer PRIMARY KEY,
-	`name` text NOT NULL UNIQUE,
+	`name` text NOT NULL,
 	`year` integer NOT NULL,
 	`latitude` real NOT NULL,
 	`longitude` real NOT NULL,
@@ -13,7 +13,8 @@ CREATE TABLE `battles` (
 	CONSTRAINT `fk_battles_country_id_countries_id_fk` FOREIGN KEY (`country_id`) REFERENCES `countries`(`id`),
 	CONSTRAINT `fk_battles_winner_id_countries_id_fk` FOREIGN KEY (`winner_id`) REFERENCES `countries`(`id`),
 	CONSTRAINT `fk_battles_loser_id_countries_id_fk` FOREIGN KEY (`loser_id`) REFERENCES `countries`(`id`),
-	CONSTRAINT `fk_battles_war_id_wars_id_fk` FOREIGN KEY (`war_id`) REFERENCES `wars`(`id`)
+	CONSTRAINT `fk_battles_war_id_wars_id_fk` FOREIGN KEY (`war_id`) REFERENCES `wars`(`id`),
+	CONSTRAINT `battles_name_year_unique` UNIQUE(`name`,`year`)
 );
 --> statement-breakpoint
 CREATE TABLE `battles_to_participants` (
@@ -36,20 +37,20 @@ CREATE TABLE `battles_to_theatres` (
 --> statement-breakpoint
 CREATE TABLE `countries` (
 	`id` integer PRIMARY KEY,
-	`name` text NOT NULL
+	`name` text NOT NULL UNIQUE
 );
 --> statement-breakpoint
 CREATE TABLE `participants` (
 	`id` integer PRIMARY KEY,
-	`name` text NOT NULL
+	`name` text NOT NULL UNIQUE
 );
 --> statement-breakpoint
 CREATE TABLE `theatres` (
 	`id` integer PRIMARY KEY,
-	`name` text NOT NULL
+	`name` text NOT NULL UNIQUE
 );
 --> statement-breakpoint
 CREATE TABLE `wars` (
 	`id` integer PRIMARY KEY,
-	`name` text NOT NULL
+	`name` text NOT NULL UNIQUE
 );

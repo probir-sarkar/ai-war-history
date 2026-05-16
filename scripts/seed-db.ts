@@ -1,5 +1,7 @@
 import 'dotenv/config'
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import { drizzle } from 'drizzle-orm/libsql'
 import { eq, inArray } from 'drizzle-orm'
 
@@ -46,6 +48,10 @@ interface BattleJson {
   massacre: boolean
 }
 
+type InsertableBattle = typeof battles.$inferInsert
+type InsertableBattleParticipant = typeof battlesToParticipants.$inferInsert
+type InsertableBattleTheatre = typeof battlesToTheatres.$inferInsert
+
 interface CleanedData {
   battles: BattleJson[]
 }
@@ -54,7 +60,7 @@ interface CleanedData {
    HELPERS
 ========================================================= */
 
-const CHUNK_SIZE = 500
+const CHUNK_SIZE = 1000
 
 function chunkArray<T>(array: T[], size: number): T[][] {
   const chunks: T[][] = []
@@ -66,14 +72,20 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks
 }
 
-async function batchInsert<T>(table: any, values: T[], message: string) {
+async function batchInsert(
+  table: any,
+  values: unknown[],
+  message: string,
+): Promise<void> {
+  if (values.length === 0) {
+    console.log(`${message} (skipped - no values)`)
+    return
+  }
+
   const chunks = chunkArray(values, CHUNK_SIZE)
 
   for (let i = 0; i < chunks.length; i++) {
-    await db
-      .insert(table)
-      .values(chunks[i] as any)
-      .onConflictDoNothing()
+    await db.insert(table).values(chunks[i]).onConflictDoNothing()
 
     console.log(`${message}: ${i + 1}/${chunks.length}`)
   }
@@ -83,7 +95,11 @@ async function batchInsert<T>(table: any, values: T[], message: string) {
    LOAD JSON
 ========================================================= */
 
-const rawJson = readFileSync('./data-clean/cleaned_data.json', 'utf-8')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const jsonPath = join(__dirname, '../data-clean/cleaned_data.json')
+
+const rawJson = readFileSync(jsonPath, 'utf-8')
 
 const data = JSON.parse(rawJson) as CleanedData
 
@@ -187,21 +203,49 @@ async function seed() {
      STEP 4 — PREPARE BATTLE INSERTS
   ========================================================= */
 
-  const battleRows = data.battles.map((battle) => ({
-    name: battle.battle,
-    year: battle.year,
-    latitude: battle.latitude,
-    longitude: battle.longitude,
-    scale: battle.scale,
-    massacre: battle.massacre,
+  const battleRows: InsertableBattle[] = []
+  const missingKeys = new Set<string>()
 
-    countryId: countryMap.get(battle.country)!,
-    winnerId: countryMap.get(battle.winner)!,
-    loserId: countryMap.get(battle.loser)!,
-    warId: warMap.get(battle.war)!,
-  }))
+  for (const battle of data.battles) {
+    const countryId = countryMap.get(battle.country)
+    const winnerId = countryMap.get(battle.winner)
+    const loserId = countryMap.get(battle.loser)
+    const warId = warMap.get(battle.war)
 
-  console.log('Battle rows prepared')
+    if (!countryId) missingKeys.add(`country: "${battle.country}"`)
+    if (!winnerId) missingKeys.add(`winner: "${battle.winner}"`)
+    if (!loserId) missingKeys.add(`loser: "${battle.loser}"`)
+    if (!warId) missingKeys.add(`war: "${battle.war}"`)
+
+    if (countryId && winnerId && loserId && warId) {
+      battleRows.push({
+        name: battle.battle,
+        year: battle.year,
+        latitude: battle.latitude,
+        longitude: battle.longitude,
+        scale: battle.scale,
+        massacre: battle.massacre,
+        countryId,
+        winnerId,
+        loserId,
+        warId,
+      })
+    }
+  }
+
+  if (missingKeys.size > 0) {
+    console.warn(
+      `\n⚠️  Warning: Skipping ${battleRows.length === 0 ? 'ALL' : data.battles.length - battleRows.length} battle(s) due to missing refs:`,
+    )
+    for (const key of missingKeys) {
+      console.warn(`   - ${key}`)
+    }
+    console.warn()
+  }
+
+  console.log(
+    `Battle rows prepared: ${battleRows.length} / ${data.battles.length}`,
+  )
 
   /* =========================================================
      STEP 5 — INSERT BATTLES
@@ -223,37 +267,44 @@ async function seed() {
 
   const allBattles = await db.select().from(battles)
 
+  // Use name + year as composite key to avoid collisions
+  // (multiple battles can have the same name but different years)
   const battleMap = new Map<string, number>()
 
   for (const battle of allBattles) {
-    battleMap.set(battle.name, battle.id)
+    const key = `${battle.name}|${battle.year}`
+    battleMap.set(key, battle.id)
   }
 
-  console.log('Battle map created')
+  console.log(`Battle map created: ${allBattles.length} battles`)
 
   /* =========================================================
      STEP 7 — BUILD JUNCTION TABLE ROWS
   ========================================================= */
 
-  const participantRelations: {
-    battleId: number
-    participantId: number
-  }[] = []
+  const participantRelations: InsertableBattleParticipant[] = []
+  const theatreRelations: InsertableBattleTheatre[] = []
 
-  const theatreRelations: {
-    battleId: number
-    theatreId: number
-  }[] = []
+  let skippedBattleCount = 0
+  let skippedParticipantCount = 0
+  let skippedTheatreCount = 0
 
   for (const battle of data.battles) {
-    const battleId = battleMap.get(battle.battle)
+    const battleKey = `${battle.battle}|${battle.year}`
+    const battleId = battleMap.get(battleKey)
 
-    if (!battleId) continue
+    if (!battleId) {
+      skippedBattleCount++
+      continue
+    }
 
     for (const participant of battle.participants) {
       const participantId = participantMap.get(participant)
 
-      if (!participantId) continue
+      if (!participantId) {
+        skippedParticipantCount++
+        continue
+      }
 
       participantRelations.push({
         battleId,
@@ -264,7 +315,10 @@ async function seed() {
     for (const theatre of battle.theatre) {
       const theatreId = theatreMap.get(theatre)
 
-      if (!theatreId) continue
+      if (!theatreId) {
+        skippedTheatreCount++
+        continue
+      }
 
       theatreRelations.push({
         battleId,
@@ -273,7 +327,28 @@ async function seed() {
     }
   }
 
-  console.log('Junction rows prepared')
+  if (
+    skippedBattleCount > 0 ||
+    skippedParticipantCount > 0 ||
+    skippedTheatreCount > 0
+  ) {
+    console.warn('\n⚠️  Junction table warnings:')
+    if (skippedBattleCount > 0)
+      console.warn(`   - Skipped ${skippedBattleCount} battles not found in DB`)
+    if (skippedParticipantCount > 0)
+      console.warn(
+        `   - Skipped ${skippedParticipantCount} participant relations (participant not found)`,
+      )
+    if (skippedTheatreCount > 0)
+      console.warn(
+        `   - Skipped ${skippedTheatreCount} theatre relations (theatre not found)`,
+      )
+    console.warn()
+  }
+
+  console.log(
+    `Junction rows prepared: ${participantRelations.length} participants, ${theatreRelations.length} theatres`,
+  )
 
   /* =========================================================
      STEP 8 — INSERT JUNCTION TABLES

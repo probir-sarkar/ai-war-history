@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "1e93a879-595c-4696-badf-501966030bdb",
+  "id": "42883293-04cd-47b1-bf2b-d26220446c59",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -471,12 +471,49 @@
     },
     {
       "columns": [
+        "name",
+        "year"
+      ],
+      "nameExplicit": false,
+      "name": "battles_name_year_unique",
+      "entityType": "uniques",
+      "table": "battles"
+    },
+    {
+      "columns": [
         "name"
       ],
       "nameExplicit": false,
-      "name": "battles_name_unique",
+      "name": "countries_name_unique",
       "entityType": "uniques",
-      "table": "battles"
+      "table": "countries"
+    },
+    {
+      "columns": [
+        "name"
+      ],
+      "nameExplicit": false,
+      "name": "participants_name_unique",
+      "entityType": "uniques",
+      "table": "participants"
+    },
+    {
+      "columns": [
+        "name"
+      ],
+      "nameExplicit": false,
+      "name": "theatres_name_unique",
+      "entityType": "uniques",
+      "table": "theatres"
+    },
+    {
+      "columns": [
+        "name"
+      ],
+      "nameExplicit": false,
+      "name": "wars_name_unique",
+      "entityType": "uniques",
+      "table": "wars"
     }
   ],
   "renames": []
