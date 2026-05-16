@@ -1,5 +1,9 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { env } from '#/env.ts'
+import { drizzle } from 'drizzle-orm/libsql'
 
-import * as schema from './schema.ts'
-
-export const db = drizzle(process.env.DATABASE_URL!, { schema })
+export const db = drizzle({
+  connection: {
+    url: env.TURSO_CONNECTION_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
+  },
+})
