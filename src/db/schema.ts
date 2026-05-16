@@ -45,7 +45,6 @@ export const theatres = sqliteTable('theatres', (t) => ({
 export const battlesToParticipants = sqliteTable(
   'battles_to_participants',
   (t) => ({
-    id: t.integer('id').primaryKey(),
     battleId: t
       .integer('battle_id')
       .notNull()
@@ -65,7 +64,6 @@ export const battlesToParticipants = sqliteTable(
 export const battlesToTheatres = sqliteTable(
   'battles_to_theatres',
   (t) => ({
-    id: t.integer('id').primaryKey(),
     battleId: t
       .integer('battle_id')
       .notNull()
