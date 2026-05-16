@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/libsql'
 import { relations } from './relations'
 import * as schema from './schema'
-import { env } from 'cloudflare:workers'
+import { env } from '#/env.ts'
 
 export const db = drizzle({
   connection: {
