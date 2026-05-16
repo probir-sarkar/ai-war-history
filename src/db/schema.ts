@@ -2,7 +2,7 @@ import { defineRelations } from 'drizzle-orm'
 import { primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
 
 export const battles = sqliteTable('battles', (t) => ({
-  id: t.integer('id').primaryKey({ autoIncrement: true }),
+  id: t.integer('id').primaryKey(),
   name: t.text('name').notNull().unique(),
   year: t.integer('year').notNull(),
   latitude: t.real('latitude').notNull(),
@@ -19,29 +19,29 @@ export const battles = sqliteTable('battles', (t) => ({
 }))
 
 export const wars = sqliteTable('wars', (t) => ({
-  id: t.integer('id').primaryKey({ autoIncrement: true }),
+  id: t.integer('id').primaryKey(),
   name: t.text('name').notNull(),
 }))
 
 export const countries = sqliteTable('countries', (t) => ({
-  id: t.integer('id').primaryKey({ autoIncrement: true }),
+  id: t.integer('id').primaryKey(),
   name: t.text('name').notNull(),
 }))
 
 export const participants = sqliteTable('participants', (t) => ({
-  id: t.integer('id').primaryKey({ autoIncrement: true }),
+  id: t.integer('id').primaryKey(),
   name: t.text('name').notNull(),
 }))
 
 export const theatres = sqliteTable('theatres', (t) => ({
-  id: t.integer('id').primaryKey({ autoIncrement: true }),
+  id: t.integer('id').primaryKey(),
   name: t.text('name').notNull(),
 }))
 
 export const battlesToParticipants = sqliteTable(
   'battles_to_participants',
   (t) => ({
-    id: t.integer('id').primaryKey({ autoIncrement: true }),
+    id: t.integer('id').primaryKey(),
     battleId: t
       .integer('battle_id')
       .notNull()
@@ -61,7 +61,7 @@ export const battlesToParticipants = sqliteTable(
 export const battlesToTheatres = sqliteTable(
   'battles_to_theatres',
   (t) => ({
-    id: t.integer('id').primaryKey({ autoIncrement: true }),
+    id: t.integer('id').primaryKey(),
     battleId: t
       .integer('battle_id')
       .notNull()

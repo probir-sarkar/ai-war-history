@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "8a2c3099-2817-4193-a60a-0be74a97fbb9",
+  "id": "1e93a879-595c-4696-badf-501966030bdb",
   "prevIds": [
-    "02ae27bd-b036-4808-b6bf-41be078b4819"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
@@ -37,7 +37,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -147,7 +147,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -177,7 +177,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -207,7 +207,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -227,7 +227,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -247,7 +247,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -267,7 +267,7 @@
     {
       "type": "integer",
       "notNull": false,
-      "autoincrement": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "id",
@@ -479,7 +479,5 @@
       "table": "battles"
     }
   ],
-  "renames": [
-    "battles.latitute->battles.latitude"
-  ]
+  "renames": []
 }
