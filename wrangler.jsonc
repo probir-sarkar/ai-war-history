@@ -7,6 +7,11 @@
     "nodejs_compat_populate_process_env",
   ],
   "main": "@tanstack/react-start/server-entry",
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+    },
+  ],
   "observability": {
     "enabled": false,
     "head_sampling_rate": 1,
