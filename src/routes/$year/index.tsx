@@ -1,9 +1,9 @@
+import { orpc } from '#/orpc/client.ts'
 import { createFileRoute } from '@tanstack/react-router'
 
-import { getBattles } from './-year.server'
-
 export const Route = createFileRoute('/$year/')({
-  loader: ({ params }) => getBattles(params.year),
+  loader: async ({ params }) =>
+    await orpc.listBattles.call({ year: params.year }),
   component: RouteComponent,
 })
 
