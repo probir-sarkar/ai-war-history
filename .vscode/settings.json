@@ -1,6 +1,7 @@
 {
   "files.watcherExclude": {
-    "**/routeTree.gen.ts": true
+    "**/routeTree.gen.ts": true,
+    "/data-clean/**": true
   },
   "search.exclude": {
     "**/routeTree.gen.ts": true
