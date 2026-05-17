@@ -7,6 +7,11 @@ const PAGE_SIZE = 12
 
 export const Route = createFileRoute('/')({
   loader: async () => await orpc.listWars.call({}),
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: (search.q as string | undefined) ?? '',
+    page: (search.page as number | undefined) ?? 1,
+    year: (typeof search.year === 'number' ? search.year : undefined),
+  }),
   head: () => ({
     meta: [
       { title: 'Wars — War History Archive' },
@@ -27,16 +32,27 @@ function Index() {
   const searchParams = Route.useSearch()
   const q = searchParams.q ?? ''
   const page = searchParams.page ?? 1
+  const year = searchParams.year ? Number(searchParams.year) : null
 
   // Filter and sort wars
   const filtered = useMemo(() => {
-    let list = wars.filter((w) => {
-      if (!q) return true
-      const needle = q.toLowerCase()
-      return w.name.toLowerCase().includes(needle)
-    })
+    let list = wars
+      .map((w) => ({
+        ...w,
+        battles: w.battles?.filter((b) => {
+          if (year === null) return true
+          return b.year === year
+        }) ?? [],
+      }))
+      .filter((w) => {
+        // Filter by name search
+        if (q && !w.name.toLowerCase().includes(q.toLowerCase())) return false
+        // Only show wars that have battles in the selected year (if year is selected)
+        if (year !== null && w.battles.length === 0) return false
+        return true
+      })
     return list.sort((a, b) => a.id - b.id)
-  }, [wars, q])
+  }, [wars, q, year])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(Number(page), totalPages)
@@ -51,6 +67,12 @@ function Index() {
   const setQuery = (query: string) => {
     navigate({
       search: { ...searchParams, q: query, page: 1 },
+    })
+  }
+
+  const setYear = (selectedYear: number | null) => {
+    navigate({
+      search: { ...searchParams, year: selectedYear, page: 1 },
     })
   }
 
@@ -76,23 +98,60 @@ function Index() {
           <em className="font-normal">from antiquity to now.</em>
         </h1>
         <p className="mt-6 max-w-2xl text-[rgb(var(--color-muted))]">
-          Browse documented wars from {formatYear(minYear)} to {formatYear(maxYear)} —
-          by year, combatant, and outcome. Each entry links to its battles.
+          {year !== null ? (
+            <>
+              Showing battles from <span className="text-[rgb(var(--color-foreground))]">{formatYear(year)}</span>
+              {' '} · <button onClick={() => setYear(null)} className="underline decoration-dotted underline-offset-4 hover:text-[rgb(var(--color-foreground))]">Show all years</button>
+            </>
+          ) : (
+            <>Browse documented wars from {formatYear(minYear)} to {formatYear(maxYear)} — by year, combatant, and outcome. Each entry links to its battles.</>
+          )}
         </p>
       </section>
 
       {/* Filters */}
       <section className="py-8 border-b border-[rgb(var(--color-border))]">
-        <div>
-          <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] mb-2">
-            Search
-          </label>
-          <input
-            value={q}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="War, country, location..."
-            className="w-full max-w-md bg-transparent border-b border-[rgb(var(--color-foreground))] px-0 py-2 outline-none placeholder:text-[rgb(var(--color-muted))]"
-          />
+        <div className="grid md:grid-cols-2 gap-8">
+          <div>
+            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] mb-2">
+              Search
+            </label>
+            <input
+              value={q}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="War, country, location..."
+              className="w-full bg-transparent border-b border-[rgb(var(--color-foreground))] px-0 py-2 outline-none placeholder:text-[rgb(var(--color-muted))]"
+            />
+          </div>
+          <div>
+            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] mb-2">
+              Battle Year
+            </label>
+            <div className="flex items-center gap-4">
+              <select
+                value={year ?? ''}
+                onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
+                className="bg-transparent border-b border-[rgb(var(--color-foreground))] px-0 py-2 outline-none cursor-pointer min-w-32"
+              >
+                <option value="">All years</option>
+                {Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
+                  .reverse()
+                  .map((y) => (
+                    <option key={y} value={y}>
+                      {formatYear(y)}
+                    </option>
+                  ))}
+              </select>
+              {year !== null && (
+                <button
+                  onClick={() => setYear(null)}
+                  className="font-mono text-xs text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-foreground))] underline decoration-dotted underline-offset-4 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -100,6 +159,7 @@ function Index() {
       <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
         <span>
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+          {year !== null && <span> in {formatYear(year)}</span>}
         </span>
         <span>
           Page {safePage} / {totalPages}
@@ -135,7 +195,12 @@ function Index() {
                 </h2>
               </div>
               <div className="hidden md:block col-span-5 text-sm pt-1.5 text-[rgb(var(--color-muted))]">
-                {w.battles?.length ?? 0} {w.battles?.length === 1 ? 'battle' : 'battles'}
+                {w.battles.length} {w.battles.length === 1 ? 'battle' : 'battles'}
+                {year !== null && (
+                  <span className="ml-2 text-[rgb(var(--color-accent))]">
+                    in {formatYear(year)}
+                  </span>
+                )}
               </div>
             </Link>
           ))

@@ -1,6 +1,12 @@
+import * as React from 'react'
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
 import { formatYear } from '#/lib/format.ts'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'
 
 export const Route = createFileRoute('/wars/$warId')({
   loader: async ({ params }) => {
@@ -34,6 +40,7 @@ export const Route = createFileRoute('/wars/$warId')({
 function WarDetail() {
   const war = Route.useLoaderData()
   const battles = war.battles ?? []
+  const [moreCombatantsOpen, setMoreCombatantsOpen] = React.useState(false)
 
   // Get year range from battles
   const years = battles.map((b) => b.year)
@@ -78,32 +85,59 @@ function WarDetail() {
       </section>
 
       {/* Participants */}
-      {battles.length > 0 && (
-        <section className="py-10 border-b border-[rgb(var(--color-border))]">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
-            Combatants
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {Array.from(
-              new Set(
-                battles.flatMap((b) => [
-                  b.country?.name,
-                  b.winner?.name,
-                  b.loser?.name,
-                  ...b.participants.map((p) => p.name),
-                ].filter(Boolean)),
-              ),
-            ).map((name) => (
-              <span
-                key={name}
-                className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
+      {battles.length > 0 && (() => {
+        const allCombatants = Array.from(
+          new Set(
+            battles.flatMap((b) => [
+              b.country?.name,
+              b.winner?.name,
+              b.loser?.name,
+              ...b.participants.map((p) => p.name),
+            ].filter(Boolean)),
+          ),
+        )
+        const defaultCount = 6
+        const visibleCombatants = allCombatants.slice(0, defaultCount)
+        const remainingCombatants = allCombatants.slice(defaultCount)
+        const hasMore = remainingCombatants.length > 0
+
+        return (
+          <section className="py-10 border-b border-[rgb(var(--color-border))]">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+              Combatants ({allCombatants.length})
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {visibleCombatants.map((name) => (
+                <span
+                  key={name}
+                  className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+            {hasMore && (
+              <Collapsible open={moreCombatantsOpen} onOpenChange={setMoreCombatantsOpen}>
+                <CollapsibleContent className="mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {remainingCombatants.map((name) => (
+                      <span
+                        key={name}
+                        className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+                <CollapsibleTrigger className="mt-4 font-mono text-xs text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-foreground))] transition-colors cursor-pointer underline decoration-dotted underline-offset-4">
+                  {moreCombatantsOpen ? `Show less` : `Show ${remainingCombatants.length} more`}
+                </CollapsibleTrigger>
+              </Collapsible>
+            )}
+          </section>
+        )
+      })()}
 
       {/* Theatres */}
       {battles.length > 0 && (

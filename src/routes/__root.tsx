@@ -52,7 +52,7 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="bg-background">
         <Navigation />
         <Outlet />
         <TanStackDevtools
