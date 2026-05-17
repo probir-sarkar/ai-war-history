@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
 import { useState } from 'react'
+import type { SubmitEvent } from 'react'
+
 import { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 
@@ -23,12 +25,13 @@ function Index() {
     q: string
   }>({ q: '' })
 
-  const handleFilterSubmit = (e: HTMLFormElement) => {
+  const handleFilterSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     setFilterPayload({
       q: formData.get('q') as string,
     })
+    setPage(1) // Reset to page 1 when filter changes
   }
 
   // Fetch wars data

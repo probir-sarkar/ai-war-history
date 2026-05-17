@@ -1,4 +1,4 @@
-import { db } from '#/db/index.ts'
+import { getDB } from '#/db/index.ts'
 import { os } from '@orpc/server'
 import { z } from 'zod'
 import { cacheMiddleware } from '../middleware/cache-middleware'
@@ -10,48 +10,56 @@ export const getWar = os
   .input(z.object({ warId: z.string() }))
   .use(cacheMiddleware({ ttl: 60 * 60 }))
   .handler(async ({ input }) => {
-    const wars = await db.query.wars.findMany({
-      where: (wars, { eq }) => eq(wars.id, Number(input.warId)),
+    const db = getDB()
+    const war = await db.query.wars.findFirst({
+      where: {
+        id: Number(input.warId),
+      },
       with: {
         battles: {
           with: {
             country: true,
             loser: true,
             participants: true,
-            theatres: true,
             winner: true,
           },
         },
       },
     })
 
-    return wars[0] ?? null
+    return war
   })
 
 export const getBattle = os
   .input(z.object({ battleId: z.string() }))
   .use(cacheMiddleware({ ttl: 60 * 60 }))
   .handler(async ({ input }) => {
-    const battles = await db.query.battles.findMany({
-      where: (battles, { eq }) => eq(battles.id, Number(input.battleId)),
+    const db = getDB()
+    const battle = await db.query.battles.findFirst({
+      where: {
+        id: Number(input.battleId),
+      },
       with: {
         country: true,
         loser: true,
         participants: true,
-        theatres: true,
         winner: true,
         war: true,
       },
     })
 
-    return battles[0] ?? null
+    return battle
   })
 
 export const listAllBattles = os
-  .input(z.object({}).optional())
+  .input(z.object({ year: z.string().optional() }))
   .use(cacheMiddleware({ ttl: 60 * 60 }))
-  .handler(async () => {
+  .handler(async ({ input: { year } }) => {
+    const db = getDB()
     return db.query.battles.findMany({
+      where: {
+        year: year ? Number(year) : undefined,
+      },
       with: {
         country: true,
         loser: true,
@@ -72,6 +80,7 @@ export const homePage = os
   )
   .use(cacheMiddleware({ ttl: 60 * 60 }))
   .handler(async ({ input: { page = 1, warName } }) => {
+    const db = getDB()
     const filters: SQL[] = []
     if (warName) filters.push(ilike(wars.name, `%${warName}%`))
 

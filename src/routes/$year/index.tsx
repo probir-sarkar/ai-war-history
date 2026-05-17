@@ -4,7 +4,7 @@ import { MapPin, Trophy, ShieldX, Mountain, Cloud, Waves, Skull } from 'lucide-r
 
 export const Route = createFileRoute('/$year/')({
   loader: async ({ params }) =>
-    await orpc.listBattles.call({ year: params.year }),
+    await orpc.listAllBattles.call({ year: params.year }),
   head: ({ params }) => ({
     meta: [
       { title: `${params.year} — War History Archive` },
@@ -64,7 +64,7 @@ function RouteComponent() {
   )
 }
 
-function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listBattles>>[number] }) {
+function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listAllBattles.call>>[number] }) {
   const theatreIcon = (name: string) => {
     const lower = name.toLowerCase()
     if (lower.includes('land') || lower.includes('ground')) return <Mountain className="w-4 h-4" />
@@ -124,7 +124,7 @@ function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listBat
           </div>
 
           {/* Theatres as icons with text */}
-          {battle.theatres.length > 0 && (
+          {battle?.theatres.length > 0 && (
             <div className="flex items-center gap-3 text-accent">
               {battle.theatres.map((t) => (
                 <div key={t.id} className="flex items-center gap-1 text-sm font-medium">
