@@ -63,28 +63,28 @@ function BattlesPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
-      <header className="border-b border-[rgb(var(--color-foreground))] pb-10">
-        <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))]">
+      <header className="border-b border-foreground pb-10">
+        <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted">
           Index II
         </div>
         <h1 className="font-serif text-5xl md:text-6xl mt-3">Battles</h1>
-        <p className="text-[rgb(var(--color-muted))] mt-4 max-w-xl">
+        <p className="text-muted mt-4 max-w-xl">
           {battles.length} engagements catalogued and cross-referenced to their
           parent war.
         </p>
       </header>
 
-      <div className="py-8 border-b border-[rgb(var(--color-border))]">
+      <div className="py-8 border-b border-border">
         <input
           value={q}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search battles, locations, wars..."
-          className="w-full max-w-md bg-transparent border-b border-[rgb(var(--color-foreground))] py-2 outline-none placeholder:text-[rgb(var(--color-muted))]"
+          className="w-full max-w-md bg-transparent border-b border-foreground py-2 outline-none placeholder:text-muted"
         />
       </div>
 
       {/* Results meta */}
-      <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+      <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
         <span>
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
         </span>
@@ -96,7 +96,7 @@ function BattlesPage() {
         </span>
       </div>
 
-      <div className="grid grid-cols-12 gap-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] border-b border-[rgb(var(--color-border))]">
+      <div className="grid grid-cols-12 gap-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted border-b border-border">
         <div className="col-span-2">Year</div>
         <div className="col-span-4">Battle</div>
         <div className="col-span-3 hidden md:block">Location</div>
@@ -104,14 +104,14 @@ function BattlesPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-16 text-center text-[rgb(var(--color-muted))] font-mono text-xs uppercase tracking-[0.2em]">
+        <div className="py-16 text-center text-muted font-mono text-xs uppercase tracking-[0.2em]">
           No entries match.
         </div>
       ) : (
         slice.map((b) => (
           <div
             key={b.id}
-            className="grid grid-cols-12 gap-4 py-5 border-b border-[rgb(var(--color-border))] hover:bg-[rgb(var(--color-accent)/0.05)] transition-colors"
+            className="grid grid-cols-12 gap-4 py-5 border-b border-border hover:bg-accent/5 transition-colors"
           >
             <div className="col-span-2 font-mono text-xs tabular-nums pt-1">
               {formatYear(b.year)}
@@ -128,14 +128,14 @@ function BattlesPage() {
                 {b.participants.map((p) => (
                   <span
                     key={p.id}
-                    className="px-2 py-0.5 bg-[rgb(var(--color-background))] text-[rgb(var(--color-muted))] text-xs rounded-sm border border-[rgb(var(--color-border))]"
+                    className="px-2 py-0.5 bg-background text-muted text-xs rounded-sm border border-border"
                   >
                     {p.name}
                   </span>
                 ))}
               </div>
             </div>
-            <div className="hidden md:block col-span-3 text-sm pt-1.5 text-[rgb(var(--color-muted))]">
+            <div className="hidden md:block col-span-3 text-sm pt-1.5 text-muted">
               {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
               {b.country && <span className="ml-1">· {b.country.name}</span>}
             </div>
@@ -160,14 +160,14 @@ function BattlesPage() {
           <button
             disabled={safePage <= 1}
             onClick={() => setPage(safePage - 1)}
-            className="border border-[rgb(var(--color-border))] px-4 py-2 hover:bg-[rgb(var(--color-accent)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             ← Prev
           </button>
           <div className="flex items-center gap-1">
             {pageNumbers(safePage, totalPages).map((p, i) =>
               p === '…' ? (
-                <span key={`e-${i}`} className="px-2 text-[rgb(var(--color-muted))]">
+                <span key={`e-${i}`} className="px-2 text-muted">
                   …
                 </span>
               ) : (
@@ -176,8 +176,8 @@ function BattlesPage() {
                   onClick={() => setPage(p as number)}
                   className={`min-w-9 h-9 px-2 border ${
                     p === safePage
-                      ? 'border-[rgb(var(--color-foreground))] bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))]'
-                      : 'border-[rgb(var(--color-border))] hover:bg-[rgb(var(--color-accent)/0.1)]'
+                      ? 'border-foreground bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))]'
+                      : 'border-border hover:bg-accent/10'
                   } transition-colors`}
                 >
                   {p}
@@ -188,7 +188,7 @@ function BattlesPage() {
           <button
             disabled={safePage >= totalPages}
             onClick={() => setPage(safePage + 1)}
-            className="border border-[rgb(var(--color-border))] px-4 py-2 hover:bg-[rgb(var(--color-accent)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Next →
           </button>

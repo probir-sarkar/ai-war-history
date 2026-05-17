@@ -1,5 +1,6 @@
 import { orpc } from '#/orpc/client.ts'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { MapPin, Trophy, ShieldX, Mountain, Cloud, Waves, Skull } from 'lucide-react'
 
 export const Route = createFileRoute('/$year/')({
   loader: async ({ params }) =>
@@ -21,15 +22,15 @@ function RouteComponent() {
   const { year } = Route.useParams()
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--color-background))]">
+    <div className="min-h-screen ">
       {/* Page Header */}
-      <header className="border-b border-[rgb(var(--color-border))] bg-[rgb(var(--color-background))]">
+      <header className="border-b border-accent bg-background">
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="flex items-baseline gap-4">
-            <h1 className="text-4xl md:text-5xl text-[rgb(var(--color-foreground))] tracking-tight font-serif">
+            <h1 className="text-4xl md:text-5xl text-foreground tracking-tight font-serif">
               {year}
             </h1>
-            <span className="text-[rgb(var(--color-muted))] text-lg font-light">
+            <span className="text-foreground/70 text-lg font-light">
               {battles.length} {battles.length === 1 ? 'Battle' : 'Battles'}
             </span>
           </div>
@@ -40,7 +41,7 @@ function RouteComponent() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         {battles.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-[rgb(var(--color-muted))] text-lg">
+            <p className="text-foreground/70 text-lg">
               No battles recorded for this year
             </p>
           </div>
@@ -54,8 +55,8 @@ function RouteComponent() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[rgb(var(--color-border))] mt-16">
-        <div className="max-w-5xl mx-auto px-6 py-8 text-center text-[rgb(var(--color-muted))] text-sm">
+      <footer className="border-t border-border mt-16">
+        <div className="max-w-5xl mx-auto px-6 py-8 text-center text-foreground/70 text-sm">
           <p>A record of conflict throughout history</p>
         </div>
       </footer>
@@ -64,124 +65,104 @@ function RouteComponent() {
 }
 
 function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listBattles>>[number] }) {
+  const theatreIcon = (name: string) => {
+    const lower = name.toLowerCase()
+    if (lower.includes('land') || lower.includes('ground')) return <Mountain className="w-4 h-4" />
+    if (lower.includes('air') || lower.includes('aerial')) return <Cloud className="w-4 h-4" />
+    if (lower.includes('sea') || lower.includes('naval') || lower.includes('marine')) return <Waves className="w-4 h-4" />
+    return null
+  }
+
   return (
-    <article className="group bg-[rgb(var(--color-background)_/_0.5)] rounded-sm border border-[rgb(var(--color-border))] shadow-sm hover:shadow-md hover:border-[rgb(var(--color-foreground)_/_0.3)] transition-all duration-200 overflow-hidden">
-      <div className="p-6">
-        {/* Battle Name & War */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-          <div>
+    <article className="group bg-background border border-border rounded-lg hover:border-accent/50 transition-all duration-200 overflow-hidden">
+      <div className="p-5">
+        {/* Header: Name + Outcome */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <Link
               to="/battles/$battleId"
               params={{ battleId: String(battle.id) }}
-              className="font-serif text-xl text-[rgb(var(--color-foreground))] group-hover:text-[rgb(var(--color-accent))] transition-colors"
+              className="font-serif text-xl text-foreground group-hover:text-accent transition-colors block"
             >
               {battle.name}
             </Link>
             {battle.war && (
-              <p className="text-[rgb(var(--color-muted))] text-sm mt-1">
-                <span className="font-medium">War:</span>{' '}
-                <Link
-                  to="/wars/$warId"
-                  params={{ warId: String(battle.war.id) }}
-                  className="hover:underline underline-offset-4 decoration-1"
-                >
-                  {battle.war.name}
-                </Link>
-              </p>
+              <Link
+                to="/wars/$warId"
+                params={{ warId: String(battle.war.id) }}
+                className="text-foreground/60 text-sm hover:text-accent transition-colors"
+              >
+                {battle.war.name}
+              </Link>
             )}
           </div>
 
-          {/* Outcome Badge */}
-          {battle.winner && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-[rgb(var(--color-muted))]">Victor:</span>
-              <span className="px-3 py-1 bg-[rgb(var(--color-success)_/_0.1)] text-[rgb(var(--color-success))] rounded-sm font-medium border border-[rgb(var(--color-success)_/_0.3)]">
-                {battle.winner.name}
-              </span>
-            </div>
-          )}
+          {/* Outcome */}
+          <div className="flex flex-col items-end gap-1 text-xs">
+            {battle.winner && (
+              <div className="flex items-center gap-1.5 text-[#16a34a]">
+                <Trophy className="w-3.5 h-3.5" />
+                <span className="font-medium">{battle.winner.name}</span>
+              </div>
+            )}
+            {battle.loser && (
+              <div className="flex items-center gap-1.5 text-destructive">
+                <ShieldX className="w-3.5 h-3.5" />
+                <span>{battle.loser.name}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Location */}
-        <div className="mt-4 flex items-center gap-2 text-[rgb(var(--color-muted))] text-sm">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-          <span>
-            {battle.latitude.toFixed(2)}°N, {battle.longitude.toFixed(2)}°E
-          </span>
-          {battle.country && (
-            <>
-              <span>·</span>
-              <span>{battle.country.name}</span>
-            </>
-          )}
-        </div>
+        {/* Meta info row */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-foreground/60 text-sm">
+          {/* Location */}
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5" />
+            <span>{battle.latitude.toFixed(1)}°N, {battle.longitude.toFixed(1)}°E</span>
+            {battle.country && <span>· {battle.country.name}</span>}
+          </div>
 
-        {/* Tags Row */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {/* Participants */}
-          {battle.participants.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {battle.participants.map((p) => (
-                <span
-                  key={p.id}
-                  className="px-2.5 py-0.5 bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] text-xs rounded-sm border border-[rgb(var(--color-border))]"
-                >
-                  {p.name}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Theatres */}
+          {/* Theatres as icons with text */}
           {battle.theatres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex items-center gap-3 text-accent">
               {battle.theatres.map((t) => (
-                <span
-                  key={t.id}
-                  className="px-2.5 py-0.5 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-xs rounded-sm border border-[rgb(var(--color-border))]"
-                >
-                  {t.name}
-                </span>
+                <div key={t.id} className="flex items-center gap-1 text-sm font-medium">
+                  {theatreIcon(t.name)}
+                  <span>{t.name}</span>
+                </div>
               ))}
             </div>
           )}
 
           {/* Scale */}
           {battle.scale && (
-            <span className="px-2.5 py-0.5 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-xs rounded-sm border border-[rgb(var(--color-border))]">
-              Scale: {battle.scale}
-            </span>
+            <span className="text-foreground/60">{battle.scale}</span>
           )}
 
-          {/* Massacre Indicator */}
+          {/* Massacre */}
           {battle.massacre && (
-            <span className="px-2.5 py-0.5 bg-[rgb(var(--color-destructive)/0.1)] text-[rgb(var(--color-destructive))] text-xs rounded-sm border border-[rgb(var(--color-destructive)/0.3)] font-medium">
-              Massacre
+            <span className="flex items-center gap-1 text-destructive font-medium">
+              <Skull className="w-3.5 h-3.5" />
+              <span>Massacre</span>
             </span>
           )}
         </div>
-      </div>
 
-      {/* Bottom Accent */}
-      <div className="h-0.5 bg-linear-to-r from-[rgb(var(--color-border))] via-[rgb(var(--color-accent))] to-[rgb(var(--color-border))] opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        {/* Participants */}
+        {battle.participants.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {battle.participants.map((p: { id: number; name: string }) => (
+              <span
+                key={p.id}
+                className="px-2 py-0.5 bg-muted text-foreground/80 text-xs rounded-md border border-border"
+              >
+                {p.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </article>
   )
 }

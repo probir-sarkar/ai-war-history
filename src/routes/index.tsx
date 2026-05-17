@@ -88,8 +88,8 @@ function Index() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       {/* Hero */}
-      <section className="border-b border-[rgb(var(--color-foreground))] pb-12">
-        <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))]">
+      <section className="border-b border-foreground pb-12">
+        <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70">
           The Archive · {wars.length} entries · {yearSpan.toLocaleString()} years
         </div>
         <h1 className="font-serif text-5xl md:text-7xl mt-3 leading-[0.95]">
@@ -97,11 +97,11 @@ function Index() {
           <br />
           <em className="font-normal">from antiquity to now.</em>
         </h1>
-        <p className="mt-6 max-w-2xl text-[rgb(var(--color-muted))]">
+        <p className="mt-6 max-w-2xl text-foreground/70">
           {year !== null ? (
             <>
-              Showing battles from <span className="text-[rgb(var(--color-foreground))]">{formatYear(year)}</span>
-              {' '} · <button onClick={() => setYear(null)} className="underline decoration-dotted underline-offset-4 hover:text-[rgb(var(--color-foreground))]">Show all years</button>
+              Showing battles from <span className="text-foreground">{formatYear(year)}</span>
+              {' '} · <button onClick={() => setYear(null)} className="underline decoration-dotted underline-offset-4 hover:text-foreground">Show all years</button>
             </>
           ) : (
             <>Browse documented wars from {formatYear(minYear)} to {formatYear(maxYear)} — by year, combatant, and outcome. Each entry links to its battles.</>
@@ -110,28 +110,28 @@ function Index() {
       </section>
 
       {/* Filters */}
-      <section className="py-8 border-b border-[rgb(var(--color-border))]">
+      <section className="py-8 border-b border-border">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] mb-2">
+            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
               Search
             </label>
             <input
               value={q}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="War, country, location..."
-              className="w-full bg-transparent border-b border-[rgb(var(--color-foreground))] px-0 py-2 outline-none placeholder:text-[rgb(var(--color-muted))]"
+              className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/70"
             />
           </div>
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] mb-2">
+            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
               Battle Year
             </label>
             <div className="flex items-center gap-4">
               <select
                 value={year ?? ''}
                 onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
-                className="bg-transparent border-b border-[rgb(var(--color-foreground))] px-0 py-2 outline-none cursor-pointer min-w-32"
+                className="bg-transparent border-b border-foreground px-0 py-2 outline-none cursor-pointer min-w-32"
               >
                 <option value="">All years</option>
                 {Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
@@ -145,7 +145,7 @@ function Index() {
               {year !== null && (
                 <button
                   onClick={() => setYear(null)}
-                  className="font-mono text-xs text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-foreground))] underline decoration-dotted underline-offset-4 transition-colors"
+                  className="font-mono text-xs text-foreground/70 hover:text-foreground underline decoration-dotted underline-offset-4 transition-colors"
                 >
                   Clear
                 </button>
@@ -156,7 +156,7 @@ function Index() {
       </section>
 
       {/* Results meta */}
-      <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+      <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70">
         <span>
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           {year !== null && <span> in {formatYear(year)}</span>}
@@ -168,14 +168,14 @@ function Index() {
 
       {/* List */}
       <section>
-        <div className="grid grid-cols-12 gap-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))] border-b border-[rgb(var(--color-border))]">
+        <div className="grid grid-cols-12 gap-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 border-b border-border">
           <div className="col-span-2">Wars</div>
           <div className="col-span-5">Name</div>
           <div className="col-span-5 hidden md:block">Battles</div>
         </div>
 
         {slice.length === 0 ? (
-          <div className="py-16 text-center text-[rgb(var(--color-muted))] font-mono text-xs uppercase tracking-[0.2em]">
+          <div className="py-16 text-center text-foreground/70 font-mono text-xs uppercase tracking-[0.2em]">
             No entries match.
           </div>
         ) : (
@@ -184,7 +184,7 @@ function Index() {
               key={w.id}
               to="/wars/$warId"
               params={{ warId: String(w.id) }}
-              className="grid grid-cols-12 gap-4 py-6 border-b border-[rgb(var(--color-border))] hover:bg-[rgb(var(--color-accent)/0.05)] transition-colors group"
+              className="grid grid-cols-12 gap-4 py-6 border-b border-border hover:bg-accent/10 transition-colors group"
             >
               <div className="col-span-2 font-mono text-xs pt-1 tabular-nums">
                 {w.id}
@@ -194,10 +194,10 @@ function Index() {
                   {w.name}
                 </h2>
               </div>
-              <div className="hidden md:block col-span-5 text-sm pt-1.5 text-[rgb(var(--color-muted))]">
+              <div className="hidden md:block col-span-5 text-sm pt-1.5 text-foreground/70">
                 {w.battles.length} {w.battles.length === 1 ? 'battle' : 'battles'}
                 {year !== null && (
-                  <span className="ml-2 text-[rgb(var(--color-accent))]">
+                  <span className="ml-2 text-accent">
                     in {formatYear(year)}
                   </span>
                 )}
@@ -213,14 +213,14 @@ function Index() {
           <button
             disabled={safePage <= 1}
             onClick={() => setPage(safePage - 1)}
-            className="border border-[rgb(var(--color-border))] px-4 py-2 hover:bg-[rgb(var(--color-accent)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             ← Prev
           </button>
           <div className="flex items-center gap-1">
             {pageNumbers(safePage, totalPages).map((p, i) =>
               p === '…' ? (
-                <span key={`e-${i}`} className="px-2 text-[rgb(var(--color-muted))]">
+                <span key={`e-${i}`} className="px-2 text-foreground/70">
                   …
                 </span>
               ) : (
@@ -229,8 +229,8 @@ function Index() {
                   onClick={() => setPage(p as number)}
                   className={`min-w-9 h-9 px-2 border ${
                     p === safePage
-                      ? 'border-[rgb(var(--color-foreground))] bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))]'
-                      : 'border-[rgb(var(--color-border))] hover:bg-[rgb(var(--color-accent)/0.1)]'
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border hover:bg-accent/10'
                   } transition-colors`}
                 >
                   {p}
@@ -241,7 +241,7 @@ function Index() {
           <button
             disabled={safePage >= totalPages}
             onClick={() => setPage(safePage + 1)}
-            className="border border-[rgb(var(--color-border))] px-4 py-2 hover:bg-[rgb(var(--color-accent)/0.1)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Next →
           </button>

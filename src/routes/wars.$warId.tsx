@@ -51,20 +51,20 @@ function WarDetail() {
     <article className="mx-auto max-w-4xl px-6 py-12">
       <Link
         to="/"
-        className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] hover:underline"
+        className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 hover:underline"
       >
         ← Index
       </Link>
 
-      <header className="mt-6 border-b border-[rgb(var(--color-foreground))] pb-10">
-        <div className="font-mono text-xs tabular-nums text-[rgb(var(--color-muted))]">
+      <header className="mt-6 border-b border-foreground pb-10">
+        <div className="font-mono text-xs tabular-nums text-foreground/70">
           {minYear && maxYear ? `${formatYear(minYear)} — ${formatYear(maxYear)}` : 'Unknown dates'}
         </div>
         <h1 className="font-serif text-5xl md:text-6xl mt-4 leading-none">{war.name}</h1>
       </header>
 
       {/* Stats grid */}
-      <section className="grid md:grid-cols-3 gap-8 py-10 border-b border-[rgb(var(--color-border))]">
+      <section className="grid md:grid-cols-3 gap-8 py-10 border-b border-border">
         <Stat label="Battles" value={`${battles.length}`} />
         <Stat
           label="Timespan"
@@ -102,15 +102,15 @@ function WarDetail() {
         const hasMore = remainingCombatants.length > 0
 
         return (
-          <section className="py-10 border-b border-[rgb(var(--color-border))]">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+          <section className="py-10 border-b border-border">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 mb-6">
               Combatants ({allCombatants.length})
             </h2>
             <div className="flex flex-wrap gap-2">
               {visibleCombatants.map((name) => (
                 <span
                   key={name}
-                  className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                  className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
                 >
                   {name}
                 </span>
@@ -123,14 +123,14 @@ function WarDetail() {
                     {remainingCombatants.map((name) => (
                       <span
                         key={name}
-                        className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                        className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
                       >
                         {name}
                       </span>
                     ))}
                   </div>
                 </CollapsibleContent>
-                <CollapsibleTrigger className="mt-4 font-mono text-xs text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-foreground))] transition-colors cursor-pointer underline decoration-dotted underline-offset-4">
+                <CollapsibleTrigger className="mt-4 font-mono text-xs text-foreground/70 hover:text-foreground transition-colors cursor-pointer underline decoration-dotted underline-offset-4">
                   {moreCombatantsOpen ? `Show less` : `Show ${remainingCombatants.length} more`}
                 </CollapsibleTrigger>
               </Collapsible>
@@ -141,8 +141,8 @@ function WarDetail() {
 
       {/* Theatres */}
       {battles.length > 0 && (
-        <section className="py-10 border-b border-[rgb(var(--color-border))]">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+        <section className="py-10 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 mb-6">
             Theatres
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -151,7 +151,7 @@ function WarDetail() {
             ).map((name) => (
               <span
                 key={name}
-                className="px-3 py-1 bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                className="px-3 py-1 bg-background text-foreground text-sm rounded-sm border border-border"
               >
                 {name}
               </span>
@@ -162,12 +162,12 @@ function WarDetail() {
 
       {/* Battles */}
       <section className="py-10">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 mb-6">
           Battles ({battles.length})
         </h2>
 
         {battles.length === 0 ? (
-          <p className="text-[rgb(var(--color-muted))] text-sm">
+          <p className="text-foreground/70 text-sm">
             No battles indexed for this war.
           </p>
         ) : (
@@ -175,15 +175,21 @@ function WarDetail() {
             {battles.map((b, i) => (
               <li
                 key={b.id}
-                className="grid grid-cols-12 gap-4 py-5 border-t border-[rgb(var(--color-border))]"
+                className="grid grid-cols-12 gap-4 py-5 border-t border-border"
               >
                 <div className="col-span-2 font-mono text-xs tabular-nums pt-1">
-                  {formatYear(b.year)}
+                  <Link
+                    to="/$year"
+                    params={{ year: String(b.year) }}
+                    className="hover:underline hover:text-accent transition-colors"
+                  >
+                    {formatYear(b.year)}
+                  </Link>
                 </div>
                 <div className="col-span-10">
                   <div className="flex items-baseline justify-between gap-4">
                     <h3 className="font-serif text-xl">
-                      <span className="text-[rgb(var(--color-muted))] mr-3 font-mono text-xs">
+                      <span className="text-foreground/70 mr-3 font-mono text-xs">
                         {String(i + 1).padStart(2, '0')}
                       </span>
                       <Link
@@ -195,17 +201,17 @@ function WarDetail() {
                       </Link>
                     </h3>
                     {b.winner && (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-success))] whitespace-nowrap">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#16a34a] whitespace-nowrap">
                         {b.winner.name}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-[rgb(var(--color-muted))] mt-1">
+                  <div className="text-sm text-foreground/70 mt-1">
                     {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
                     {b.country && <span> · {b.country.name}</span>}
                   </div>
                   {b.massacre && (
-                    <span className="inline-block mt-2 px-2 py-0.5 bg-[rgb(var(--color-destructive)/0.1)] text-[rgb(var(--color-destructive))] text-xs rounded-sm border border-[rgb(var(--color-destructive)/0.3)] font-mono uppercase tracking-widest">
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-destructive/20 text-destructive text-xs rounded-sm border border-destructive/40 font-mono uppercase tracking-widest">
                       Massacre
                     </span>
                   )}
@@ -222,7 +228,7 @@ function WarDetail() {
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70">
         {label}
       </div>
       <div className="font-serif text-lg mt-1 leading-snug">{value}</div>

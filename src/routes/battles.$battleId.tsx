@@ -38,18 +38,18 @@ function BattleDetail() {
     <article className="mx-auto max-w-4xl px-6 py-12">
       <Link
         to="/battles"
-        className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] hover:underline"
+        className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted hover:underline"
       >
         ← Battles
       </Link>
 
-      <header className="mt-6 border-b border-[rgb(var(--color-foreground))] pb-10">
+      <header className="mt-6 border-b border-foreground pb-10">
         <div className="flex items-center gap-4">
-          <div className="font-mono text-xs tabular-nums text-[rgb(var(--color-muted))]">
+          <div className="font-mono text-xs tabular-nums text-muted">
             {formatYear(battle.year)}
           </div>
           {battle.massacre && (
-            <span className="px-2 py-0.5 bg-[rgb(var(--color-destructive)/0.1)] text-[rgb(var(--color-destructive))] text-xs rounded-sm border border-[rgb(var(--color-destructive)/0.3)] font-mono uppercase tracking-widest">
+            <span className="px-2 py-0.5 bg-destructive/10 text-destructive text-xs rounded-sm border border-[rgb(var(--color-destructive)/0.3)] font-mono uppercase tracking-widest">
               Massacre
             </span>
           )}
@@ -62,7 +62,7 @@ function BattleDetail() {
             <Link
               to="/wars/$warId"
               params={{ warId: String(battle.war.id) }}
-              className="inline-flex items-center gap-2 text-[rgb(var(--color-muted))] hover:text-[rgb(var(--color-foreground))] transition-colors"
+              className="inline-flex items-center gap-2 text-muted hover:text-foreground transition-colors"
             >
               <span className="font-mono text-xs uppercase tracking-[0.15em]">
                 Part of
@@ -76,7 +76,7 @@ function BattleDetail() {
       </header>
 
       {/* Stats grid */}
-      <section className="grid md:grid-cols-4 gap-8 py-10 border-b border-[rgb(var(--color-border))]">
+      <section className="grid md:grid-cols-4 gap-8 py-10 border-b border-border">
         <Stat label="Location" value={`${battle.latitude.toFixed(2)}°N, ${battle.longitude.toFixed(2)}°E`} />
         {battle.country && <Stat label="Country" value={battle.country.name} />}
         {battle.scale && <Stat label="Scale" value={String(battle.scale)} />}
@@ -85,8 +85,8 @@ function BattleDetail() {
 
       {/* Outcome */}
       {battle.winner && battle.loser && (
-        <section className="py-10 border-b border-[rgb(var(--color-border))]">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+        <section className="py-10 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
             Outcome
           </h2>
           <div className="grid md:grid-cols-2 gap-10">
@@ -98,15 +98,15 @@ function BattleDetail() {
 
       {/* Participants */}
       {battle.participants.length > 0 && (
-        <section className="py-10 border-b border-[rgb(var(--color-border))]">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+        <section className="py-10 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
             Participants ({battle.participants.length})
           </h2>
           <div className="flex flex-wrap gap-2">
             {battle.participants.map((p) => (
               <span
                 key={p.id}
-                className="px-3 py-1 bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                className="px-3 py-1 bg-background text-foreground text-sm rounded-sm border border-border"
               >
                 {p.name}
               </span>
@@ -117,15 +117,15 @@ function BattleDetail() {
 
       {/* Theatres */}
       {battle.theatres.length > 0 && (
-        <section className="py-10 border-b border-[rgb(var(--color-border))]">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+        <section className="py-10 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
             Theatre{battle.theatres.length > 1 ? 's' : ''}
           </h2>
           <div className="flex flex-wrap gap-2">
             {battle.theatres.map((t) => (
               <span
                 key={t.id}
-                className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+                className="px-3 py-1 bg-accent/10 text-foreground text-sm rounded-sm border border-border"
               >
                 {t.name}
               </span>
@@ -140,7 +140,7 @@ function BattleDetail() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
         {label}
       </div>
       <div className="font-serif text-lg mt-1 leading-snug">{value}</div>
@@ -165,7 +165,7 @@ function SideBlock({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
           {label}
         </span>
         {isVictor && (
