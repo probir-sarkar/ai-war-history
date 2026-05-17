@@ -1,6 +1,6 @@
 import { db } from '#/db/index.ts'
 import { os } from '@orpc/server'
-import * as z from 'zod'
+import { z } from 'zod'
 import { cacheMiddleware } from '../middleware/cache-middleware'
 
 export const listBattles = os
@@ -10,6 +10,14 @@ export const listBattles = os
     return db.query.battles.findMany({
       where: {
         year: Number(year),
+      },
+      with: {
+        country: true,
+        loser: true,
+        participants: true,
+        theatres: true,
+        winner: true,
+        war: true,
       },
     })
   })

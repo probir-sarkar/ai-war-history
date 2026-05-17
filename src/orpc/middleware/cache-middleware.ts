@@ -5,7 +5,7 @@ type CacheOptions = {
   ttl?: number
 }
 export const cacheMiddleware = (options: CacheOptions = { ttl: 60 }) =>
-  os.middleware(async ({ context, next, path }, input, output) => {
+  os.middleware(async ({ next, path }, input, output) => {
     const cacheKey = path.join('/') + JSON.stringify(input)
     const cached = await env.KV.get(cacheKey)
     if (cached) {
