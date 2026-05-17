@@ -2,10 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { formatYear } from '#/lib/format.ts'
 import { Search } from 'lucide-react'
-
-const PAGE_SIZE = 12
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -21,43 +18,35 @@ export const Route = createFileRoute('/')({
 })
 
 function Index() {
-  // Filter state (not applied until filter button is clicked)
-  const [filterQ, setFilterQ] = useState('')
-  const [filterYear, setFilterYear] = useState<number | null>(null)
-
-  // Applied filters (used for API call)
-  const [appliedQ, setAppliedQ] = useState('')
-  const [appliedYear, setAppliedYear] = useState<number | null>(null)
   const [page, setPage] = useState(1)
+  const [filterPayload, setFilterPayload] = useState<{
+    q: string
+  }>({ q: '' })
 
-  // Fetch wars data using ORPC queryOptions with server-side filtering
-  const warsQuery = useQuery(orpc.listWars.queryOptions({
-    input: {
-      q: appliedQ || undefined,
-      year: appliedYear ?? undefined,
-      page,
-      pageSize: PAGE_SIZE,
-    },
-  }))
+  const handleFilterSubmit = (e: HTMLFormElement) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    setFilterPayload({
+      q: formData.get('q') as string,
+    })
+  }
 
-  const { items = [], total, totalPages } = warsQuery.data ?? { items: [], total: 0, totalPages: 1 }
+  // Fetch wars data
+  const warsQuery = useQuery(
+    orpc.homePage.queryOptions({
+      input: {
+        page,
+        warName: filterPayload.q,
+      },
+    }),
+  )
+
+  const {
+    items = [],
+    total,
+    totalPages,
+  } = warsQuery.data ?? { items: [], total: 0, totalPages: 1 }
   const safePage = Math.min(page, totalPages)
-
-  const handleApplyFilter = () => {
-    setAppliedQ(filterQ)
-    setAppliedYear(filterYear)
-    setPage(1)
-  }
-
-  const handleClearFilter = () => {
-    setFilterQ('')
-    setFilterYear(null)
-    setAppliedQ('')
-    setAppliedYear(null)
-    setPage(1)
-  }
-
-  const hasActiveFilter = appliedQ || appliedYear !== null
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -72,65 +61,35 @@ function Index() {
           <em className="font-normal">from antiquity to now.</em>
         </h1>
         <p className="mt-6 max-w-2xl text-foreground/70">
-          {hasActiveFilter ? (
-            <>
-              Filtering: {appliedQ && <span className="text-foreground">"{appliedQ}"</span>}
-              {appliedYear && <span> in {formatYear(appliedYear)}</span>}
-              {' '} · <button onClick={handleClearFilter} className="underline decoration-dotted underline-offset-4 hover:text-foreground">Clear filter</button>
-            </>
-          ) : (
-            <>Browse documented wars — by name, year, combatant, and outcome. Each entry links to its battles.</>
-          )}
+          Browse documented wars — by name, year, combatant, and outcome. Each
+          entry links to its battles.
         </p>
       </section>
 
       {/* Filters */}
       <section className="py-8 border-b border-border">
-        <div className="grid md:grid-cols-[1fr_1fr_auto] gap-6 items-end">
+        <form
+          onSubmit={handleFilterSubmit}
+          className="grid md:grid-cols-[1fr_auto] gap-6 items-end"
+        >
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
               Search
             </label>
             <input
-              value={filterQ}
-              onChange={(e) => setFilterQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
+              name="q"
               placeholder="War name..."
               className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/50"
             />
           </div>
-          <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
-              Battle Year
-            </label>
-            <input
-              type="number"
-              value={filterYear ?? ''}
-              onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : null)}
-              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
-              placeholder="e.g. 1945"
-              className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/50"
-            />
-          </div>
           <button
-            onClick={handleApplyFilter}
-            className="flex items-center gap-2 px-4 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors font-mono text-xs uppercase tracking-[0.15em]"
+            type="submit"
+            className="flex items-center gap-2 px-4 py-2 border border-foreground/30 hover:border-foreground text-foreground/70 hover:text-foreground font-mono text-xs uppercase tracking-[0.15em] transition-colors"
           >
             <Search className="w-4 h-4" />
             Filter
           </button>
-        </div>
-        {hasActiveFilter && (
-          <div className="mt-4 flex items-center gap-2 text-sm text-foreground/70">
-            <span>Active filters:</span>
-            {appliedQ && (
-              <span className="px-2 py-0.5 bg-muted rounded text-xs">"{appliedQ}"</span>
-            )}
-            {appliedYear && (
-              <span className="px-2 py-0.5 bg-muted rounded text-xs">{formatYear(appliedYear)}</span>
-            )}
-          </div>
-        )}
+        </form>
       </section>
 
       {/* Results meta */}
@@ -146,9 +105,10 @@ function Index() {
       {/* List */}
       <section>
         <div className="grid grid-cols-12 gap-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 border-b border-border">
-          <div className="col-span-2">Wars</div>
-          <div className="col-span-5">Name</div>
-          <div className="col-span-5 hidden md:block">Battles</div>
+          <div className="col-span-1">ID</div>
+          <div className="col-span-8">Name</div>
+          <div className="col-span-2">Battles</div>
+          <div className="col-span-1 hidden md:block" />
         </div>
 
         {warsQuery.isLoading ? (
@@ -167,17 +127,18 @@ function Index() {
               params={{ warId: String(w.id) }}
               className="grid grid-cols-12 gap-4 py-6 border-b border-border hover:bg-accent/10 transition-colors group"
             >
-              <div className="col-span-2 font-mono text-xs pt-1 tabular-nums">
+              <div className="col-span-1 font-mono text-xs pt-1 tabular-nums">
                 {w.id}
               </div>
-              <div className="col-span-10 md:col-span-5">
+              <div className="col-span-11 md:col-span-8">
                 <h2 className="font-serif text-2xl leading-tight group-hover:underline underline-offset-4 decoration-1">
                   {w.name}
                 </h2>
               </div>
-              <div className="hidden md:block col-span-5 text-sm pt-1.5 text-foreground/70">
-                {w.battles.length} {w.battles.length === 1 ? 'battle' : 'battles'}
+              <div className="col-span-4 md:col-span-2 text-sm pt-1.5 text-foreground/70">
+                {w.battle_count} {w.battle_count === 1 ? 'battle' : 'battles'}
               </div>
+              <div className="hidden md:block col-span-1 text-right">→</div>
             </Link>
           ))
         )}
@@ -232,7 +193,11 @@ function pageNumbers(current: number, total: number): (number | '…')[] {
   const push = (n: number | '…') => pages.push(n)
   const window = 1
   for (let i = 1; i <= total; i++) {
-    if (i === 1 || i === total || (i >= current - window && i <= current + window)) {
+    if (
+      i === 1 ||
+      i === total ||
+      (i >= current - window && i <= current + window)
+    ) {
       push(i)
     } else if (pages[pages.length - 1] !== '…') {
       push('…')

@@ -29,9 +29,9 @@ interface BattleJson {
   id: string
   country: string
   battle: string
-  year: number
-  latitude: number
-  longitude: number
+  year: number | string | null
+  latitude: number | string | null
+  longitude: number | string | null
   participants: string[]
   war: string
   winner: string
@@ -183,6 +183,19 @@ async function seed() {
   const missingKeys = new Set<string>()
 
   for (const battle of data.battles) {
+    // Skip battles with invalid coordinates or year
+    const hasInvalidCoords =
+      battle.latitude === null ||
+      battle.longitude === null ||
+      battle.latitude === '' ||
+      battle.longitude === ''
+    const hasInvalidYear = battle.year === null || battle.year === ''
+
+    if (hasInvalidCoords || hasInvalidYear) {
+      missingKeys.add(`invalid data: "${battle.battle}"`)
+      continue
+    }
+
     const countryId = countryMap.get(battle.country)
     const winnerId = countryMap.get(battle.winner)
     const loserId = countryMap.get(battle.loser)
@@ -196,9 +209,9 @@ async function seed() {
     if (countryId && winnerId && loserId && warId) {
       battleRows.push({
         name: battle.battle,
-        year: battle.year,
-        latitude: battle.latitude,
-        longitude: battle.longitude,
+        year: Number(battle.year),
+        latitude: Number(battle.latitude),
+        longitude: Number(battle.longitude),
         scale: battle.scale,
         massacre: battle.massacre,
         theatres: battle.theatre,
