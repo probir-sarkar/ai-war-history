@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { drizzle } from 'drizzle-orm/postgres-js'
+import { drizzle } from 'drizzle-orm/node-postgres'
 
 import {
   battles,
@@ -17,11 +17,8 @@ import { relations } from '#/db/relations.ts'
    DATABASE
 ========================================================= */
 
-const db = drizzle({
-  connection: {
-    url: process.env.DATABASE_URL!,
-  },
-  relations: relations,
+export const db = drizzle(process.env.DATABASE_URL!, {
+  relations,
 })
 
 /* =========================================================
