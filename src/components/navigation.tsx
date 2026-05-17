@@ -17,13 +17,13 @@ export function Navigation() {
           <div className="flex items-center gap-6">
             <Link
               to="/"
-              className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors"
+              className="font-mono text-xs uppercase tracking-[0.15em] text-foreground/80 hover:text-foreground transition-colors"
             >
               Wars
             </Link>
             <Link
               to="/battles"
-              className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-foreground transition-colors"
+              className="font-mono text-xs uppercase tracking-[0.15em] text-foreground/80 hover:text-foreground transition-colors"
             >
               Battles
             </Link>

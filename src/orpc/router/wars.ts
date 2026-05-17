@@ -64,7 +64,6 @@ export const listAllBattles = os
         country: true,
         loser: true,
         participants: true,
-        theatres: true,
         winner: true,
         war: true,
       },

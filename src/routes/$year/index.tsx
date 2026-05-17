@@ -1,6 +1,14 @@
 import { orpc } from '#/orpc/client.ts'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { MapPin, Trophy, ShieldX, Mountain, Cloud, Waves, Skull } from 'lucide-react'
+import {
+  MapPin,
+  Trophy,
+  ShieldX,
+  Mountain,
+  Cloud,
+  Waves,
+  Skull,
+} from 'lucide-react'
 
 export const Route = createFileRoute('/$year/')({
   loader: async ({ params }) =>
@@ -15,6 +23,7 @@ export const Route = createFileRoute('/$year/')({
     ],
   }),
   component: RouteComponent,
+  ssr: true,
 })
 
 function RouteComponent() {
@@ -64,12 +73,23 @@ function RouteComponent() {
   )
 }
 
-function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listAllBattles.call>>[number] }) {
+function BattleCard({
+  battle,
+}: {
+  battle: Awaited<ReturnType<typeof orpc.listAllBattles.call>>[number]
+}) {
   const theatreIcon = (name: string) => {
     const lower = name.toLowerCase()
-    if (lower.includes('land') || lower.includes('ground')) return <Mountain className="w-4 h-4" />
-    if (lower.includes('air') || lower.includes('aerial')) return <Cloud className="w-4 h-4" />
-    if (lower.includes('sea') || lower.includes('naval') || lower.includes('marine')) return <Waves className="w-4 h-4" />
+    if (lower.includes('land') || lower.includes('ground'))
+      return <Mountain className="w-4 h-4" />
+    if (lower.includes('air') || lower.includes('aerial'))
+      return <Cloud className="w-4 h-4" />
+    if (
+      lower.includes('sea') ||
+      lower.includes('naval') ||
+      lower.includes('marine')
+    )
+      return <Waves className="w-4 h-4" />
     return null
   }
 
@@ -119,17 +139,22 @@ function BattleCard({ battle }: { battle: Awaited<ReturnType<typeof orpc.listAll
           {/* Location */}
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" />
-            <span>{battle.latitude.toFixed(1)}°N, {battle.longitude.toFixed(1)}°E</span>
+            <span>
+              {battle.latitude.toFixed(1)}°N, {battle.longitude.toFixed(1)}°E
+            </span>
             {battle.country && <span>· {battle.country.name}</span>}
           </div>
 
           {/* Theatres as icons with text */}
-          {battle?.theatres.length > 0 && (
+          {battle.theatres && battle.theatres.length > 0 && (
             <div className="flex items-center gap-3 text-accent">
               {battle.theatres.map((t) => (
-                <div key={t.id} className="flex items-center gap-1 text-sm font-medium">
-                  {theatreIcon(t.name)}
-                  <span>{t.name}</span>
+                <div
+                  key={t}
+                  className="flex items-center gap-1 text-sm font-medium"
+                >
+                  {theatreIcon(t)}
+                  <span>{t}</span>
                 </div>
               ))}
             </div>
