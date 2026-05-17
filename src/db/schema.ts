@@ -1,15 +1,17 @@
-import { primaryKey, sqliteTable, unique } from 'drizzle-orm/sqlite-core'
+import { pgEnum, pgTable, primaryKey, unique } from 'drizzle-orm/pg-core'
 
-export const battles = sqliteTable(
+export const theatresEnum = pgEnum('theatres', ['Air', 'Land', 'Sea'])
+export const battles = pgTable(
   'battles',
   (t) => ({
-    id: t.integer('id').primaryKey(),
+    id: t.serial().primaryKey(),
     name: t.text('name').notNull(),
     year: t.integer('year').notNull(),
     latitude: t.real('latitude').notNull(),
     longitude: t.real('longitude').notNull(),
     scale: t.integer('scale'),
-    massacre: t.integer('massacre', { mode: 'boolean' }),
+    massacre: t.boolean(),
+    theatres: theatresEnum('theatres').array(),
     countryId: t.integer('country_id').references(() => countries.id),
     winnerId: t.integer('winner_id').references(() => countries.id),
     loserId: t.integer('loser_id').references(() => countries.id),
@@ -21,27 +23,22 @@ export const battles = sqliteTable(
   (t) => [unique().on(t.name, t.year)],
 )
 
-export const wars = sqliteTable('wars', (t) => ({
-  id: t.integer('id').primaryKey(),
+export const wars = pgTable('wars', (t) => ({
+  id: t.serial().primaryKey(),
   name: t.text('name').notNull().unique(),
 }))
 
-export const countries = sqliteTable('countries', (t) => ({
-  id: t.integer('id').primaryKey(),
+export const countries = pgTable('countries', (t) => ({
+  id: t.serial().primaryKey(),
   name: t.text('name').notNull().unique(),
 }))
 
-export const participants = sqliteTable('participants', (t) => ({
-  id: t.integer('id').primaryKey(),
+export const participants = pgTable('participants', (t) => ({
+  id: t.serial().primaryKey(),
   name: t.text('name').notNull().unique(),
 }))
 
-export const theatres = sqliteTable('theatres', (t) => ({
-  id: t.integer('id').primaryKey(),
-  name: t.text('name').notNull().unique(),
-}))
-
-export const battlesToParticipants = sqliteTable(
+export const battlesToParticipants = pgTable(
   'battles_to_participants',
   (t) => ({
     battleId: t
@@ -56,25 +53,6 @@ export const battlesToParticipants = sqliteTable(
   (t) => [
     primaryKey({
       columns: [t.battleId, t.participantId],
-    }),
-  ],
-)
-
-export const battlesToTheatres = sqliteTable(
-  'battles_to_theatres',
-  (t) => ({
-    battleId: t
-      .integer('battle_id')
-      .notNull()
-      .references(() => battles.id),
-    theatreId: t
-      .integer('theatre_id')
-      .notNull()
-      .references(() => theatres.id),
-  }),
-  (t) => [
-    primaryKey({
-      columns: [t.battleId, t.theatreId],
     }),
   ],
 )

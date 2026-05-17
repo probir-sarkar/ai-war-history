@@ -7,13 +7,17 @@ import { wars, battles } from '#/db/schema.ts'
 export const listWars = os
   .input(
     z.object({
-      region: z.string().optional(),
-      fromYear: z.number().optional(),
-      toYear: z.number().optional(),
+      q: z.string().optional(),
+      year: z.number().optional(),
+      page: z.number().optional(),
+      pageSize: z.number().optional(),
     }),
   )
   .use(cacheMiddleware({ ttl: 60 * 60 }))
   .handler(async ({ input }) => {
+    const page = input.page ?? 1
+    const pageSize = input.pageSize ?? 12
+
     const wars = await db.query.wars.findMany({
       with: {
         battles: {
@@ -28,11 +32,47 @@ export const listWars = os
       },
     })
 
-    if (input.region) {
-      // Filter by region if we add region field later
+    // Filter on server
+    let filtered = wars.filter((w) => {
+      // Filter by name search
+      if (input.q && !w.name.toLowerCase().includes(input.q.toLowerCase())) {
+        return false
+      }
+
+      // Filter by battle year
+      if (input.year !== undefined) {
+        const hasBattleInYear = w.battles?.some((b) => b.year === input.year)
+        if (!hasBattleInYear) return false
+      }
+
+      return true
+    })
+
+    // Filter battles by year if specified
+    if (input.year !== undefined) {
+      filtered = filtered.map((w) => ({
+        ...w,
+        battles: w.battles?.filter((b) => b.year === input.year) ?? [],
+      }))
     }
 
-    return wars
+    // Sort by ID
+    filtered.sort((a, b) => a.id - b.id)
+
+    // Calculate pagination
+    const total = filtered.length
+    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const safePage = Math.min(page, totalPages)
+    const start = (safePage - 1) * pageSize
+    const end = start + pageSize
+    const paginated = filtered.slice(start, end)
+
+    return {
+      items: paginated,
+      total,
+      totalPages,
+      currentPage: safePage,
+    }
   })
 
 export const getWar = os

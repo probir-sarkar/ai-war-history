@@ -2,19 +2,16 @@ import 'dotenv/config'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { drizzle } from 'drizzle-orm/libsql'
-import { eq, inArray } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/postgres-js'
 
 import {
   battles,
   wars,
   countries,
-  theatres,
   participants,
   battlesToParticipants,
-  battlesToTheatres,
-  relations,
 } from '../src/db/schema.ts'
+import { relations } from '#/db/relations.ts'
 
 /* =========================================================
    DATABASE
@@ -22,10 +19,9 @@ import {
 
 const db = drizzle({
   connection: {
-    url: process.env.TURSO_CONNECTION_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN!,
+    url: process.env.DATABASE_URL!,
   },
-  relations,
+  relations: relations,
 })
 
 /* =========================================================
@@ -44,13 +40,12 @@ interface BattleJson {
   winner: string
   loser: string
   scale: number | null
-  theatre: string[]
+  theatre: ('Air' | 'Land' | 'Sea')[]
   massacre: boolean
 }
 
 type InsertableBattle = typeof battles.$inferInsert
 type InsertableBattleParticipant = typeof battlesToParticipants.$inferInsert
-type InsertableBattleTheatre = typeof battlesToTheatres.$inferInsert
 
 interface CleanedData {
   battles: BattleJson[]
@@ -116,7 +111,6 @@ async function seed() {
 
   const uniqueCountries = new Set<string>()
   const uniqueWars = new Set<string>()
-  const uniqueTheatres = new Set<string>()
   const uniqueParticipants = new Set<string>()
 
   for (const battle of data.battles) {
@@ -125,10 +119,6 @@ async function seed() {
     uniqueCountries.add(battle.loser)
 
     uniqueWars.add(battle.war)
-
-    for (const theatre of battle.theatre) {
-      uniqueTheatres.add(theatre)
-    }
 
     for (const participant of battle.participants) {
       uniqueParticipants.add(participant)
@@ -154,12 +144,6 @@ async function seed() {
   )
 
   await batchInsert(
-    theatres,
-    [...uniqueTheatres].map((name) => ({ name })),
-    'Theatres inserted',
-  )
-
-  await batchInsert(
     participants,
     [...uniqueParticipants].map((name) => ({ name })),
     'Participants inserted',
@@ -173,12 +157,11 @@ async function seed() {
 
   const allCountries = await db.select().from(countries)
   const allWars = await db.select().from(wars)
-  const allTheatres = await db.select().from(theatres)
   const allParticipants = await db.select().from(participants)
 
   const countryMap = new Map<string, number>()
   const warMap = new Map<string, number>()
-  const theatreMap = new Map<string, number>()
+
   const participantMap = new Map<string, number>()
 
   for (const item of allCountries) {
@@ -187,10 +170,6 @@ async function seed() {
 
   for (const item of allWars) {
     warMap.set(item.name, item.id)
-  }
-
-  for (const item of allTheatres) {
-    theatreMap.set(item.name, item.id)
   }
 
   for (const item of allParticipants) {
@@ -225,6 +204,7 @@ async function seed() {
         longitude: battle.longitude,
         scale: battle.scale,
         massacre: battle.massacre,
+        theatres: battle.theatre,
         countryId,
         winnerId,
         loserId,
@@ -283,11 +263,9 @@ async function seed() {
   ========================================================= */
 
   const participantRelations: InsertableBattleParticipant[] = []
-  const theatreRelations: InsertableBattleTheatre[] = []
 
   let skippedBattleCount = 0
   let skippedParticipantCount = 0
-  let skippedTheatreCount = 0
 
   for (const battle of data.battles) {
     const battleKey = `${battle.battle}|${battle.year}`
@@ -311,27 +289,9 @@ async function seed() {
         participantId,
       })
     }
-
-    for (const theatre of battle.theatre) {
-      const theatreId = theatreMap.get(theatre)
-
-      if (!theatreId) {
-        skippedTheatreCount++
-        continue
-      }
-
-      theatreRelations.push({
-        battleId,
-        theatreId,
-      })
-    }
   }
 
-  if (
-    skippedBattleCount > 0 ||
-    skippedParticipantCount > 0 ||
-    skippedTheatreCount > 0
-  ) {
+  if (skippedBattleCount > 0 || skippedParticipantCount > 0) {
     console.warn('\n⚠️  Junction table warnings:')
     if (skippedBattleCount > 0)
       console.warn(`   - Skipped ${skippedBattleCount} battles not found in DB`)
@@ -339,16 +299,9 @@ async function seed() {
       console.warn(
         `   - Skipped ${skippedParticipantCount} participant relations (participant not found)`,
       )
-    if (skippedTheatreCount > 0)
-      console.warn(
-        `   - Skipped ${skippedTheatreCount} theatre relations (theatre not found)`,
-      )
+
     console.warn()
   }
-
-  console.log(
-    `Junction rows prepared: ${participantRelations.length} participants, ${theatreRelations.length} theatres`,
-  )
 
   /* =========================================================
      STEP 8 — INSERT JUNCTION TABLES
@@ -358,12 +311,6 @@ async function seed() {
     battlesToParticipants,
     participantRelations,
     'Battle-participant relations inserted',
-  )
-
-  await batchInsert(
-    battlesToTheatres,
-    theatreRelations,
-    'Battle-theatre relations inserted',
   )
 
   console.log('Seed completed successfully')

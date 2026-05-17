@@ -1,13 +1,9 @@
-import { drizzle } from 'drizzle-orm/libsql/web'
 import { relations } from './relations'
 import * as schema from './schema'
+import { drizzle } from 'drizzle-orm/postgres-js'
 import { env } from '#/env.ts'
+import postgres from 'postgres'
 
-export const db = drizzle({
-  connection: {
-    url: env.TURSO_CONNECTION_URL,
-    authToken: env.TURSO_AUTH_TOKEN,
-  },
-  relations: relations,
-  schema: schema,
-})
+const queryClient = postgres(env.DATABASE_URL)
+
+export const db = drizzle({ client: queryClient, schema, relations })

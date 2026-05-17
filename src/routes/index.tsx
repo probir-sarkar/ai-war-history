@@ -1,17 +1,13 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { useMemo } from 'react'
-import { formatYear, formatYearRange } from '#/lib/format.ts'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { formatYear } from '#/lib/format.ts'
+import { Search } from 'lucide-react'
 
 const PAGE_SIZE = 12
 
 export const Route = createFileRoute('/')({
-  loader: async () => await orpc.listWars.call({}),
-  validateSearch: (search: Record<string, unknown>) => ({
-    q: (search.q as string | undefined) ?? '',
-    page: (search.page as number | undefined) ?? 1,
-    year: (typeof search.year === 'number' ? search.year : undefined),
-  }),
   head: () => ({
     meta: [
       { title: 'Wars — War History Archive' },
@@ -25,72 +21,50 @@ export const Route = createFileRoute('/')({
 })
 
 function Index() {
-  const wars = Route.useLoaderData()
-  const navigate = useNavigate({ from: '/' })
+  // Filter state (not applied until filter button is clicked)
+  const [filterQ, setFilterQ] = useState('')
+  const [filterYear, setFilterYear] = useState<number | null>(null)
 
-  // Get URL search params
-  const searchParams = Route.useSearch()
-  const q = searchParams.q ?? ''
-  const page = searchParams.page ?? 1
-  const year = searchParams.year ? Number(searchParams.year) : null
+  // Applied filters (used for API call)
+  const [appliedQ, setAppliedQ] = useState('')
+  const [appliedYear, setAppliedYear] = useState<number | null>(null)
+  const [page, setPage] = useState(1)
 
-  // Filter and sort wars
-  const filtered = useMemo(() => {
-    let list = wars
-      .map((w) => ({
-        ...w,
-        battles: w.battles?.filter((b) => {
-          if (year === null) return true
-          return b.year === year
-        }) ?? [],
-      }))
-      .filter((w) => {
-        // Filter by name search
-        if (q && !w.name.toLowerCase().includes(q.toLowerCase())) return false
-        // Only show wars that have battles in the selected year (if year is selected)
-        if (year !== null && w.battles.length === 0) return false
-        return true
-      })
-    return list.sort((a, b) => a.id - b.id)
-  }, [wars, q, year])
+  // Fetch wars data using ORPC queryOptions with server-side filtering
+  const warsQuery = useQuery(orpc.listWars.queryOptions({
+    input: {
+      q: appliedQ || undefined,
+      year: appliedYear ?? undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    },
+  }))
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(Number(page), totalPages)
-  const slice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const { items = [], total, totalPages } = warsQuery.data ?? { items: [], total: 0, totalPages: 1 }
+  const safePage = Math.min(page, totalPages)
 
-  const setPage = (newPage: number) => {
-    navigate({
-      search: { ...searchParams, page: newPage },
-    })
+  const handleApplyFilter = () => {
+    setAppliedQ(filterQ)
+    setAppliedYear(filterYear)
+    setPage(1)
   }
 
-  const setQuery = (query: string) => {
-    navigate({
-      search: { ...searchParams, q: query, page: 1 },
-    })
+  const handleClearFilter = () => {
+    setFilterQ('')
+    setFilterYear(null)
+    setAppliedQ('')
+    setAppliedYear(null)
+    setPage(1)
   }
 
-  const setYear = (selectedYear: number | null) => {
-    navigate({
-      search: { ...searchParams, year: selectedYear, page: 1 },
-    })
-  }
-
-  // Get year range from wars
-  const years = wars.flatMap((w) => {
-    const battlesWithYear = w.battles?.map((b) => b.year) ?? []
-    return battlesWithYear.length > 0 ? battlesWithYear : [1500] // fallback
-  })
-  const minYear = Math.min(...years)
-  const maxYear = Math.max(...years)
-  const yearSpan = maxYear - minYear
+  const hasActiveFilter = appliedQ || appliedYear !== null
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       {/* Hero */}
       <section className="border-b border-foreground pb-12">
         <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70">
-          The Archive · {wars.length} entries · {yearSpan.toLocaleString()} years
+          The Archive · {total} entries
         </div>
         <h1 className="font-serif text-5xl md:text-7xl mt-3 leading-[0.95]">
           A record of conflict,
@@ -98,68 +72,71 @@ function Index() {
           <em className="font-normal">from antiquity to now.</em>
         </h1>
         <p className="mt-6 max-w-2xl text-foreground/70">
-          {year !== null ? (
+          {hasActiveFilter ? (
             <>
-              Showing battles from <span className="text-foreground">{formatYear(year)}</span>
-              {' '} · <button onClick={() => setYear(null)} className="underline decoration-dotted underline-offset-4 hover:text-foreground">Show all years</button>
+              Filtering: {appliedQ && <span className="text-foreground">"{appliedQ}"</span>}
+              {appliedYear && <span> in {formatYear(appliedYear)}</span>}
+              {' '} · <button onClick={handleClearFilter} className="underline decoration-dotted underline-offset-4 hover:text-foreground">Clear filter</button>
             </>
           ) : (
-            <>Browse documented wars from {formatYear(minYear)} to {formatYear(maxYear)} — by year, combatant, and outcome. Each entry links to its battles.</>
+            <>Browse documented wars — by name, year, combatant, and outcome. Each entry links to its battles.</>
           )}
         </p>
       </section>
 
       {/* Filters */}
       <section className="py-8 border-b border-border">
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-[1fr_1fr_auto] gap-6 items-end">
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
               Search
             </label>
             <input
-              value={q}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="War, country, location..."
-              className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/70"
+              value={filterQ}
+              onChange={(e) => setFilterQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
+              placeholder="War name..."
+              className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/50"
             />
           </div>
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
               Battle Year
             </label>
-            <div className="flex items-center gap-4">
-              <select
-                value={year ?? ''}
-                onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
-                className="bg-transparent border-b border-foreground px-0 py-2 outline-none cursor-pointer min-w-32"
-              >
-                <option value="">All years</option>
-                {Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
-                  .reverse()
-                  .map((y) => (
-                    <option key={y} value={y}>
-                      {formatYear(y)}
-                    </option>
-                  ))}
-              </select>
-              {year !== null && (
-                <button
-                  onClick={() => setYear(null)}
-                  className="font-mono text-xs text-foreground/70 hover:text-foreground underline decoration-dotted underline-offset-4 transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            <input
+              type="number"
+              value={filterYear ?? ''}
+              onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : null)}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilter()}
+              placeholder="e.g. 1945"
+              className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/50"
+            />
           </div>
+          <button
+            onClick={handleApplyFilter}
+            className="flex items-center gap-2 px-4 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors font-mono text-xs uppercase tracking-[0.15em]"
+          >
+            <Search className="w-4 h-4" />
+            Filter
+          </button>
         </div>
+        {hasActiveFilter && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-foreground/70">
+            <span>Active filters:</span>
+            {appliedQ && (
+              <span className="px-2 py-0.5 bg-muted rounded text-xs">"{appliedQ}"</span>
+            )}
+            {appliedYear && (
+              <span className="px-2 py-0.5 bg-muted rounded text-xs">{formatYear(appliedYear)}</span>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Results meta */}
       <div className="flex items-baseline justify-between py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70">
         <span>
-          {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
-          {year !== null && <span> in {formatYear(year)}</span>}
+          {total} {total === 1 ? 'entry' : 'entries'}
         </span>
         <span>
           Page {safePage} / {totalPages}
@@ -174,12 +151,16 @@ function Index() {
           <div className="col-span-5 hidden md:block">Battles</div>
         </div>
 
-        {slice.length === 0 ? (
+        {warsQuery.isLoading ? (
+          <div className="py-16 text-center text-foreground/70 font-mono text-xs uppercase tracking-[0.2em]">
+            Loading...
+          </div>
+        ) : items.length === 0 ? (
           <div className="py-16 text-center text-foreground/70 font-mono text-xs uppercase tracking-[0.2em]">
             No entries match.
           </div>
         ) : (
-          slice.map((w) => (
+          items.map((w) => (
             <Link
               key={w.id}
               to="/wars/$warId"
@@ -196,11 +177,6 @@ function Index() {
               </div>
               <div className="hidden md:block col-span-5 text-sm pt-1.5 text-foreground/70">
                 {w.battles.length} {w.battles.length === 1 ? 'battle' : 'battles'}
-                {year !== null && (
-                  <span className="ml-2 text-accent">
-                    in {formatYear(year)}
-                  </span>
-                )}
               </div>
             </Link>
           ))
@@ -226,7 +202,7 @@ function Index() {
               ) : (
                 <button
                   key={p}
-                  onClick={() => setPage(p as number)}
+                  onClick={() => setPage(p)}
                   className={`min-w-9 h-9 px-2 border ${
                     p === safePage
                       ? 'border-foreground bg-foreground text-background'

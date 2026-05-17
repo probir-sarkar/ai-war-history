@@ -23,10 +23,6 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.battles.id.through(r.battlesToParticipants.battleId),
       to: r.participants.id.through(r.battlesToParticipants.participantId),
     }),
-    theatres: r.many.theatres({
-      from: r.battles.id.through(r.battlesToTheatres.battleId),
-      to: r.theatres.id.through(r.battlesToTheatres.theatreId),
-    }),
   },
   wars: {
     battles: r.many.battles(),
@@ -46,9 +42,6 @@ export const relations = defineRelations(schema, (r) => ({
     }),
   },
   participants: {
-    battles: r.many.battles(),
-  },
-  theatres: {
     battles: r.many.battles(),
   },
 }))
