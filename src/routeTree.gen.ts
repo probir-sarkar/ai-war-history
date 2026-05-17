@@ -9,11 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as BattlesRouteImport } from './routes/battles'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as YearIndexRouteImport } from './routes/$year/index'
+import { Route as WarsWarIdRouteImport } from './routes/wars.$warId'
+import { Route as BattlesBattleIdRouteImport } from './routes/battles.$battleId'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 
+const BattlesRoute = BattlesRouteImport.update({
+  id: '/battles',
+  path: '/battles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -23,6 +31,16 @@ const YearIndexRoute = YearIndexRouteImport.update({
   id: '/$year/',
   path: '/$year/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const WarsWarIdRoute = WarsWarIdRouteImport.update({
+  id: '/wars/$warId',
+  path: '/wars/$warId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BattlesBattleIdRoute = BattlesBattleIdRouteImport.update({
+  id: '/$battleId',
+  path: '/$battleId',
+  getParentRoute: () => BattlesRoute,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
@@ -37,40 +55,80 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/battles': typeof BattlesRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/battles/$battleId': typeof BattlesBattleIdRoute
+  '/wars/$warId': typeof WarsWarIdRoute
   '/$year/': typeof YearIndexRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/battles': typeof BattlesRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/battles/$battleId': typeof BattlesBattleIdRoute
+  '/wars/$warId': typeof WarsWarIdRoute
   '/$year': typeof YearIndexRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/battles': typeof BattlesRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/battles/$battleId': typeof BattlesBattleIdRoute
+  '/wars/$warId': typeof WarsWarIdRoute
   '/$year/': typeof YearIndexRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/$' | '/$year/' | '/api/rpc/$'
+  fullPaths:
+    | '/'
+    | '/battles'
+    | '/api/$'
+    | '/battles/$battleId'
+    | '/wars/$warId'
+    | '/$year/'
+    | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/$' | '/$year' | '/api/rpc/$'
-  id: '__root__' | '/' | '/api/$' | '/$year/' | '/api/rpc/$'
+  to:
+    | '/'
+    | '/battles'
+    | '/api/$'
+    | '/battles/$battleId'
+    | '/wars/$warId'
+    | '/$year'
+    | '/api/rpc/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/battles'
+    | '/api/$'
+    | '/battles/$battleId'
+    | '/wars/$warId'
+    | '/$year/'
+    | '/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BattlesRoute: typeof BattlesRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
+  WarsWarIdRoute: typeof WarsWarIdRoute
   YearIndexRoute: typeof YearIndexRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/battles': {
+      id: '/battles'
+      path: '/battles'
+      fullPath: '/battles'
+      preLoaderRoute: typeof BattlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -84,6 +142,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/$year/'
       preLoaderRoute: typeof YearIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/wars/$warId': {
+      id: '/wars/$warId'
+      path: '/wars/$warId'
+      fullPath: '/wars/$warId'
+      preLoaderRoute: typeof WarsWarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/battles/$battleId': {
+      id: '/battles/$battleId'
+      path: '/$battleId'
+      fullPath: '/battles/$battleId'
+      preLoaderRoute: typeof BattlesBattleIdRouteImport
+      parentRoute: typeof BattlesRoute
     }
     '/api/$': {
       id: '/api/$'
@@ -102,9 +174,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BattlesRouteChildren {
+  BattlesBattleIdRoute: typeof BattlesBattleIdRoute
+}
+
+const BattlesRouteChildren: BattlesRouteChildren = {
+  BattlesBattleIdRoute: BattlesBattleIdRoute,
+}
+
+const BattlesRouteWithChildren =
+  BattlesRoute._addFileChildren(BattlesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BattlesRoute: BattlesRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
+  WarsWarIdRoute: WarsWarIdRoute,
   YearIndexRoute: YearIndexRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }

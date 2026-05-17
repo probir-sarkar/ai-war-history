@@ -1,0 +1,197 @@
+import { createFileRoute, Link, notFound } from '@tanstack/react-router'
+import { orpc } from '#/orpc/client.ts'
+import { formatYear } from '#/lib/format.ts'
+
+export const Route = createFileRoute('/wars/$warId')({
+  loader: async ({ params }) => {
+    const result = await orpc.getWar.call({ warId: params.warId })
+    if (!result) throw notFound()
+    return result
+  },
+  head: ({ loaderData }) => ({
+    meta: loaderData
+      ? [
+          { title: `${loaderData.name} — War History Archive` },
+          { name: 'description', content: `${loaderData.name} and its battles` },
+          { property: 'og:title', content: loaderData.name },
+        ]
+      : [],
+  }),
+  notFoundComponent: () => (
+    <div className="mx-auto max-w-3xl px-6 py-24 text-center">
+      <h1 className="font-serif text-4xl">Entry not found</h1>
+      <Link
+        to="/"
+        className="font-mono text-xs uppercase tracking-[0.2em] underline mt-6 inline-block"
+      >
+        Back to index
+      </Link>
+    </div>
+  ),
+  component: WarDetail,
+})
+
+function WarDetail() {
+  const war = Route.useLoaderData()
+  const battles = war.battles ?? []
+
+  // Get year range from battles
+  const years = battles.map((b) => b.year)
+  const minYear = years.length > 0 ? Math.min(...years) : null
+  const maxYear = years.length > 0 ? Math.max(...years) : null
+
+  return (
+    <article className="mx-auto max-w-4xl px-6 py-12">
+      <Link
+        to="/"
+        className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] hover:underline"
+      >
+        ← Index
+      </Link>
+
+      <header className="mt-6 border-b border-[rgb(var(--color-foreground))] pb-10">
+        <div className="font-mono text-xs tabular-nums text-[rgb(var(--color-muted))]">
+          {minYear && maxYear ? `${formatYear(minYear)} — ${formatYear(maxYear)}` : 'Unknown dates'}
+        </div>
+        <h1 className="font-serif text-5xl md:text-6xl mt-4 leading-none">{war.name}</h1>
+      </header>
+
+      {/* Stats grid */}
+      <section className="grid md:grid-cols-3 gap-8 py-10 border-b border-[rgb(var(--color-border))]">
+        <Stat label="Battles" value={`${battles.length}`} />
+        <Stat
+          label="Timespan"
+          value={minYear && maxYear ? `${maxYear - minYear} yrs` : 'Unknown'}
+        />
+        <Stat
+          label="Countries"
+          value={
+            new Set(
+              battles.flatMap((b) => [
+                b.country?.name,
+                b.winner?.name,
+                b.loser?.name,
+              ].filter(Boolean)),
+            ).size
+          }
+        />
+      </section>
+
+      {/* Participants */}
+      {battles.length > 0 && (
+        <section className="py-10 border-b border-[rgb(var(--color-border))]">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+            Combatants
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(
+              new Set(
+                battles.flatMap((b) => [
+                  b.country?.name,
+                  b.winner?.name,
+                  b.loser?.name,
+                  ...b.participants.map((p) => p.name),
+                ].filter(Boolean)),
+              ),
+            ).map((name) => (
+              <span
+                key={name}
+                className="px-3 py-1 bg-[rgb(var(--color-accent)/0.1)] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Theatres */}
+      {battles.length > 0 && (
+        <section className="py-10 border-b border-[rgb(var(--color-border))]">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+            Theatres
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(
+              new Set(battles.flatMap((b) => b.theatres.map((t) => t.name))),
+            ).map((name) => (
+              <span
+                key={name}
+                className="px-3 py-1 bg-[rgb(var(--color-background))] text-[rgb(var(--color-foreground))] text-sm rounded-sm border border-[rgb(var(--color-border))]"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Battles */}
+      <section className="py-10">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-[rgb(var(--color-muted))] mb-6">
+          Battles ({battles.length})
+        </h2>
+
+        {battles.length === 0 ? (
+          <p className="text-[rgb(var(--color-muted))] text-sm">
+            No battles indexed for this war.
+          </p>
+        ) : (
+          <ol className="space-y-0">
+            {battles.map((b, i) => (
+              <li
+                key={b.id}
+                className="grid grid-cols-12 gap-4 py-5 border-t border-[rgb(var(--color-border))]"
+              >
+                <div className="col-span-2 font-mono text-xs tabular-nums pt-1">
+                  {formatYear(b.year)}
+                </div>
+                <div className="col-span-10">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h3 className="font-serif text-xl">
+                      <span className="text-[rgb(var(--color-muted))] mr-3 font-mono text-xs">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <Link
+                        to="/battles/$battleId"
+                        params={{ battleId: String(b.id) }}
+                        className="hover:underline underline-offset-4 decoration-1"
+                      >
+                        {b.name}
+                      </Link>
+                    </h3>
+                    {b.winner && (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-success))] whitespace-nowrap">
+                        {b.winner.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-[rgb(var(--color-muted))] mt-1">
+                    {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
+                    {b.country && <span> · {b.country.name}</span>}
+                  </div>
+                  {b.massacre && (
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-[rgb(var(--color-destructive)/0.1)] text-[rgb(var(--color-destructive))] text-xs rounded-sm border border-[rgb(var(--color-destructive)/0.3)] font-mono uppercase tracking-widest">
+                      Massacre
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </article>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgb(var(--color-muted))]">
+        {label}
+      </div>
+      <div className="font-serif text-lg mt-1 leading-snug">{value}</div>
+    </div>
+  )
+}
