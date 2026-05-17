@@ -12,4 +12,10 @@
       "binding": "KV",
     },
   ],
+  "hyperdrive": [
+    {
+      "binding": "DATABASE_URL",
+      "id": "f78cb0bcb0144907b98e60e2e9ad0952",
+    },
+  ],
 }

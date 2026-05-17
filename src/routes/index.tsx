@@ -5,6 +5,7 @@ import type { SubmitEvent } from 'react'
 
 import { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
+import { cn } from '#/lib/utils.ts'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -167,11 +168,12 @@ function Index() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`min-w-9 h-9 px-2 border ${
+                  className={cn(
+                    'min-w-9 h-9 px-2 border transition-colors',
                     p === safePage
                       ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:bg-accent/10'
-                  } transition-colors`}
+                  )}
                 >
                   {p}
                 </button>
