@@ -1,10 +1,9 @@
 import { relations } from './relations'
 import * as schema from './schema'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { env } from 'cloudflare:workers'
+import { env } from '#/env'
 
-export const getDB = () =>
-  drizzle(env.DATABASE_URL.connectionString, {
-    schema,
-    relations,
-  })
+export const db = drizzle(env.DATABASE_URL, {
+  schema,
+  relations,
+})
