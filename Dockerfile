@@ -28,7 +28,6 @@ ENV NODE_ENV=production
 # Copy only build output
 COPY --from=build /app/.output ./.output
 
-USER appuser
 
 EXPOSE 3000
 
