@@ -1,25 +1,20 @@
 # ========================================
 # Build Stage
 # ========================================
-FROM dhi.io/node:24-alpine3.22-dev AS build
+FROM oven/bun:latest AS build
 
 WORKDIR /app
 
-RUN corepack enable
-RUN corepack use pnpm@latest-11
-
-
 COPY . .
 
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN bun install
 
-RUN pnpm build
+RUN bun run build
 
 # ========================================
 # Production Stage
 # ========================================
-FROM dhi.io/node:24-alpine3.22
+FROM oven/bun:latest
 
 WORKDIR /app
 
@@ -28,7 +23,7 @@ ENV NODE_ENV=production
 # Copy only build output
 COPY --from=build /app/.output ./.output
 
+USER bun
+EXPOSE 3000/tcp
 
-EXPOSE 3000
-
-CMD ["node", ".output/server/index.mjs"]
+CMD ["bun", "run", ".output/server/index.mjs"]
