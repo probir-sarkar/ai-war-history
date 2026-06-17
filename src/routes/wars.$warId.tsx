@@ -18,7 +18,10 @@ export const Route = createFileRoute('/wars/$warId')({
     meta: loaderData
       ? [
           { title: `${loaderData.name} — War History Archive` },
-          { name: 'description', content: `${loaderData.name} and its battles` },
+          {
+            name: 'description',
+            content: `${loaderData.name} and its battles`,
+          },
           { property: 'og:title', content: loaderData.name },
         ]
       : [],
@@ -39,7 +42,10 @@ export const Route = createFileRoute('/wars/$warId')({
 
 function WarDetail() {
   const war = Route.useLoaderData()
-  const battles = war.battles ?? []
+  const battles = war.battles
+  const theaters = [
+    ...new Set(battles.flatMap((b) => b.theatres ).filter(Boolean)),
+  ]
   const [moreCombatantsOpen, setMoreCombatantsOpen] = React.useState(false)
 
   // Get year range from battles
@@ -58,9 +64,13 @@ function WarDetail() {
 
       <header className="mt-6 border-b border-foreground pb-10">
         <div className="font-mono text-xs tabular-nums text-foreground/70">
-          {minYear && maxYear ? `${formatYear(minYear)} — ${formatYear(maxYear)}` : 'Unknown dates'}
+          {minYear && maxYear
+            ? `${formatYear(minYear)} — ${formatYear(maxYear)}`
+            : 'Unknown dates'}
         </div>
-        <h1 className="font-serif text-5xl md:text-6xl mt-4 leading-none">{war.name}</h1>
+        <h1 className="font-serif text-5xl md:text-6xl mt-4 leading-none">
+          {war.name}
+        </h1>
       </header>
 
       {/* Stats grid */}
@@ -74,70 +84,78 @@ function WarDetail() {
           label="Countries"
           value={
             new Set(
-              battles.flatMap((b) => [
-                b.country?.name,
-                b.winner?.name,
-                b.loser?.name,
-              ].filter(Boolean)),
+              battles.flatMap((b) =>
+                [b.country?.name, b.winner?.name, b.loser?.name].filter(
+                  Boolean,
+                ),
+              ),
             ).size
           }
         />
       </section>
 
       {/* Participants */}
-      {battles.length > 0 && (() => {
-        const allCombatants = Array.from(
-          new Set(
-            battles.flatMap((b) => [
-              b.country?.name,
-              b.winner?.name,
-              b.loser?.name,
-              ...b.participants.map((p) => p.name),
-            ].filter(Boolean)),
-          ),
-        )
-        const defaultCount = 6
-        const visibleCombatants = allCombatants.slice(0, defaultCount)
-        const remainingCombatants = allCombatants.slice(defaultCount)
-        const hasMore = remainingCombatants.length > 0
+      {battles.length > 0 &&
+        (() => {
+          const allCombatants = Array.from(
+            new Set(
+              battles.flatMap((b) =>
+                [
+                  b.country?.name,
+                  b.winner?.name,
+                  b.loser?.name,
+                  ...b.participants.map((p) => p.name),
+                ].filter(Boolean),
+              ),
+            ),
+          )
+          const defaultCount = 6
+          const visibleCombatants = allCombatants.slice(0, defaultCount)
+          const remainingCombatants = allCombatants.slice(defaultCount)
+          const hasMore = remainingCombatants.length > 0
 
-        return (
-          <section className="py-10 border-b border-border">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 mb-6">
-              Combatants ({allCombatants.length})
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {visibleCombatants.map((name) => (
-                <span
-                  key={name}
-                  className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
+          return (
+            <section className="py-10 border-b border-border">
+              <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 mb-6">
+                Combatants ({allCombatants.length})
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {visibleCombatants.map((name) => (
+                  <span
+                    key={name}
+                    className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+              {hasMore && (
+                <Collapsible
+                  open={moreCombatantsOpen}
+                  onOpenChange={setMoreCombatantsOpen}
                 >
-                  {name}
-                </span>
-              ))}
-            </div>
-            {hasMore && (
-              <Collapsible open={moreCombatantsOpen} onOpenChange={setMoreCombatantsOpen}>
-                <CollapsibleContent className="mt-2">
-                  <div className="flex flex-wrap gap-2">
-                    {remainingCombatants.map((name) => (
-                      <span
-                        key={name}
-                        className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-                <CollapsibleTrigger className="mt-4 font-mono text-xs text-foreground/70 hover:text-foreground transition-colors cursor-pointer underline decoration-dotted underline-offset-4">
-                  {moreCombatantsOpen ? `Show less` : `Show ${remainingCombatants.length} more`}
-                </CollapsibleTrigger>
-              </Collapsible>
-            )}
-          </section>
-        )
-      })()}
+                  <CollapsibleContent className="mt-2">
+                    <div className="flex flex-wrap gap-2">
+                      {remainingCombatants.map((name) => (
+                        <span
+                          key={name}
+                          className="px-3 py-1 bg-accent/20 text-foreground text-sm rounded-sm border border-border"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                  <CollapsibleTrigger className="mt-4 font-mono text-xs text-foreground/70 hover:text-foreground transition-colors cursor-pointer underline decoration-dotted underline-offset-4">
+                    {moreCombatantsOpen
+                      ? `Show less`
+                      : `Show ${remainingCombatants.length} more`}
+                  </CollapsibleTrigger>
+                </Collapsible>
+              )}
+            </section>
+          )
+        })()}
 
       {/* Theatres */}
       {battles.length > 0 && (
@@ -146,9 +164,7 @@ function WarDetail() {
             Theatres
           </h2>
           <div className="flex flex-wrap gap-2">
-            {Array.from(
-              new Set(battles.flatMap((b) => b.theatres.map((t) => t.name))),
-            ).map((name) => (
+            {theaters.map((name) => (
               <span
                 key={name}
                 className="px-3 py-1 bg-background text-foreground text-sm rounded-sm border border-border"
