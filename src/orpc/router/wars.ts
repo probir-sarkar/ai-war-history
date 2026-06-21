@@ -3,7 +3,7 @@ import { os } from '@orpc/server'
 import { z } from 'zod'
 import { battles, wars } from '#/db/schema.ts'
 import type { SQL } from 'drizzle-orm'
-import { and, eq, ilike, sql } from 'drizzle-orm'
+import { and, eq, ilike, or, sql } from 'drizzle-orm'
 
 export const getWar = os
   .input(z.object({ warId: z.string() }))
@@ -49,20 +49,43 @@ export const getBattle = os
   })
 
 export const listAllBattles = os
-  .input(z.object({ year: z.string().optional() }))
-  .handler(async ({ input: { year } }) => {
-    return db.query.battles.findMany({
+  .input(
+    z.object({
+      year: z.string().optional(),
+      page: z.number().optional(),
+      pageSize: z.number().optional(),
+    }),
+  )
+  .handler(async ({ input: { year, page = 1, pageSize = 24 } }) => {
+    const whereClause = year ? eq(battles.year, Number(year)) : undefined
+    const totalBattles = await db.$count(battles, whereClause)
+    const totalPages = Math.max(1, Math.ceil(totalBattles / pageSize))
+    const safePage = Math.min(page, totalPages)
+
+    // Fetch paginated battles with relations
+    const items = await db.query.battles.findMany({
       where: {
-        year: year ? Number(year) : undefined,
+        AND: [
+          {
+            year: year ? Number(year) : undefined,
+          },
+        ],
       },
       with: {
         country: true,
-        loser: true,
         participants: true,
-        winner: true,
         war: true,
       },
+      limit: pageSize,
+      offset: (safePage - 1) * pageSize,
     })
+
+    return {
+      items,
+      total: totalBattles,
+      totalPages,
+      currentPage: safePage,
+    }
   })
 
 export const homePage = os

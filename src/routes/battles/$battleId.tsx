@@ -38,14 +38,14 @@ function BattleDetail() {
     <article className="mx-auto max-w-4xl px-6 py-12">
       <Link
         to="/battles"
-        className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted hover:underline"
+        className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:underline"
       >
         ← Battles
       </Link>
 
       <header className="mt-6 border-b border-foreground pb-10">
         <div className="flex items-center gap-4">
-          <div className="font-mono text-xs tabular-nums text-muted">
+          <div className="font-mono text-xs tabular-nums text-muted-foreground">
             {formatYear(battle.year)}
           </div>
           {battle.massacre && (
@@ -62,7 +62,7 @@ function BattleDetail() {
             <Link
               to="/wars/$warId"
               params={{ warId: String(battle.war.id) }}
-              className="inline-flex items-center gap-2 text-muted hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="font-mono text-xs uppercase tracking-[0.15em]">
                 Part of
@@ -86,7 +86,7 @@ function BattleDetail() {
       {/* Outcome */}
       {battle.winner && battle.loser && (
         <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
             Outcome
           </h2>
           <div className="grid md:grid-cols-2 gap-10">
@@ -99,7 +99,7 @@ function BattleDetail() {
       {/* Participants */}
       {battle.participants.length > 0 && (
         <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
             Participants ({battle.participants.length})
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -116,18 +116,18 @@ function BattleDetail() {
       )}
 
       {/* Theatres */}
-      {battle.theatres.length > 0 && (
+      {battle.theatres && battle.theatres.length > 0 && (
         <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted mb-6">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
             Theatre{battle.theatres.length > 1 ? 's' : ''}
           </h2>
           <div className="flex flex-wrap gap-2">
             {battle.theatres.map((t) => (
               <span
-                key={t.id}
+                key={t}
                 className="px-3 py-1 bg-accent/10 text-foreground text-sm rounded-sm border border-border"
               >
-                {t.name}
+                {t}
               </span>
             ))}
           </div>
@@ -140,7 +140,7 @@ function BattleDetail() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         {label}
       </div>
       <div className="font-serif text-lg mt-1 leading-snug">{value}</div>
@@ -165,7 +165,7 @@ function SideBlock({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           {label}
         </span>
         {isVictor && (
