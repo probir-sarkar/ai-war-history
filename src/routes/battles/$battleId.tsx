@@ -11,9 +11,9 @@ export const Route = createFileRoute('/battles/$battleId')({
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.name} — War History Archive` },
-          { name: 'description', content: `Battle of ${loaderData.name}` },
-          { property: 'og:title', content: loaderData.name },
+          { title: `Battle of ${loaderData.name} (${loaderData.year}) — War History Archive` },
+          { name: 'description', content: `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}` },
+          { property: 'og:title', content: `Battle of ${loaderData.name}` },
         ]
       : [],
   }),
@@ -44,7 +44,7 @@ function BattleDetail() {
       </Link>
 
       <header className="mt-6 border-b border-foreground pb-10">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 mb-6">
           <div className="font-mono text-xs tabular-nums text-muted-foreground">
             {formatYear(battle.year)}
           </div>
@@ -53,53 +53,89 @@ function BattleDetail() {
               Massacre
             </span>
           )}
+          {battle.theatres && battle.theatres.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              {battle.theatres.map((t) => (
+                <span
+                  key={t}
+                  className="px-2 py-0.5 bg-accent/10 text-foreground text-xs rounded-sm border border-border font-mono uppercase tracking-wider"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <h1 className="font-serif text-5xl md:text-6xl mt-4 leading-none">
-          {battle.name}
+
+        <h1 className="font-serif text-5xl md:text-6xl leading-none">
+          Battle of {battle.name}
         </h1>
-        {battle.war && (
-          <div className="mt-4">
+
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          {battle.country && (
+            <span className="font-serif">{battle.country.name}</span>
+          )}
+          {battle.country && battle.war && <span>•</span>}
+          {battle.war && (
             <Link
               to="/wars/$warId"
               params={{ warId: String(battle.war.id) }}
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              className="hover:text-foreground underline underline-offset-4 decoration-1 transition-colors"
             >
-              <span className="font-mono text-xs uppercase tracking-[0.15em]">
-                Part of
-              </span>
-              <span className="font-serif text-lg underline underline-offset-4 decoration-1">
-                {battle.war.name}
-              </span>
+              {battle.war.name}
             </Link>
+          )}
+          {battle.scale && (
+            <>
+              {(battle.country || battle.war) && <span>•</span>}
+              <span className="font-mono text-xs uppercase tracking-[0.15em]">
+                Scale: {battle.scale}
+              </span>
+            </>
+          )}
+        </div>
+
+        {(battle.winner || battle.loser) && (
+          <div className="mt-8 p-5 bg-muted/30 rounded-sm border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-8">
+                {battle.winner && (
+                  <div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">
+                      Victor
+                    </span>
+                    <span className="font-serif text-xl">{battle.winner.name}</span>
+                  </div>
+                )}
+                {battle.winner && battle.loser && <span className="text-muted-foreground">vs</span>}
+                {battle.loser && (
+                  <div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">
+                      Defeated
+                    </span>
+                    <span className="font-serif text-xl">{battle.loser.name}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </header>
 
-      {/* Stats grid */}
-      <section className="grid md:grid-cols-4 gap-8 py-10 border-b border-border">
-        <Stat label="Location" value={`${battle.latitude.toFixed(2)}°N, ${battle.longitude.toFixed(2)}°E`} />
-        {battle.country && <Stat label="Country" value={battle.country.name} />}
-        {battle.scale && <Stat label="Scale" value={String(battle.scale)} />}
-        {battle.winner && <Stat label="Victor" value={battle.winner.name} />}
+      {/* Coordinates */}
+      <section className="py-8 border-b border-border">
+        <div className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+          Coordinates
+        </div>
+        <div className="font-serif text-lg">
+          {battle.latitude.toFixed(4)}°N, {battle.longitude.toFixed(4)}°E
+        </div>
       </section>
-
-      {/* Outcome */}
-      {battle.winner && battle.loser && (
-        <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
-            Outcome
-          </h2>
-          <div className="grid md:grid-cols-2 gap-10">
-            <SideBlock label="Victorious" winner={battle.winner} isVictor={true} />
-            <SideBlock label="Defeated" loser={battle.loser} isVictor={false} />
-          </div>
-        </section>
-      )}
 
       {/* Participants */}
       {battle.participants.length > 0 && (
-        <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
+        <section className="py-8 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-4">
             Participants ({battle.participants.length})
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -114,67 +150,6 @@ function BattleDetail() {
           </div>
         </section>
       )}
-
-      {/* Theatres */}
-      {battle.theatres && battle.theatres.length > 0 && (
-        <section className="py-10 border-b border-border">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-6">
-            Theatre{battle.theatres.length > 1 ? 's' : ''}
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {battle.theatres.map((t) => (
-              <span
-                key={t}
-                className="px-3 py-1 bg-accent/10 text-foreground text-sm rounded-sm border border-border"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
     </article>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="font-serif text-lg mt-1 leading-snug">{value}</div>
-    </div>
-  )
-}
-
-function SideBlock({
-  label,
-  winner,
-  loser,
-  isVictor,
-}: {
-  label: string
-  winner?: { name: string }
-  loser?: { name: string }
-  isVictor: boolean
-}) {
-  const entity = winner || loser
-  if (!entity) return null
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          {label}
-        </span>
-        {isVictor && (
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] border border-[rgb(var(--color-success))] text-[rgb(var(--color-success))] px-2 py-0.5">
-            Victor
-          </span>
-        )}
-      </div>
-      <p className="font-serif text-2xl leading-snug">{entity.name}</p>
-    </div>
   )
 }
