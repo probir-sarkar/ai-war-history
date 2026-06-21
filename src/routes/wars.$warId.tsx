@@ -7,6 +7,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '#/components/ui/collapsible'
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Skull,
+  Crown,
+  Shield,
+} from 'lucide-react'
 
 export const Route = createFileRoute('/wars/$warId')({
   loader: async ({ params }) => {
@@ -14,18 +22,27 @@ export const Route = createFileRoute('/wars/$warId')({
     if (!result) throw notFound()
     return result
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.name} — War History Archive` },
-          {
-            name: 'description',
-            content: `${loaderData.name} and its battles`,
-          },
-          { property: 'og:title', content: loaderData.name },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return { meta: [] }
+    const battles = loaderData.battles
+    const years = battles.map((b) => b.year)
+    const minYear = years.length > 0 ? Math.min(...years) : null
+    const maxYear = years.length > 0 ? Math.max(...years) : null
+
+    return {
+      meta: [
+        { title: `${loaderData.name} (${minYear ? formatYear(minYear) : 'Unknown'}–${maxYear ? formatYear(maxYear) : 'Unknown'}) — War History Archive` },
+        {
+          name: 'description',
+          content: `Comprehensive history of ${loaderData.name}, including ${battles.length} battles spanning ${minYear && maxYear ? maxYear - minYear : 0} years. Detailed records of participants, outcomes, and historical significance.`,
+        },
+        { property: 'og:title', content: loaderData.name },
+        { property: 'og:description', content: `${battles.length} battles documented from ${minYear ? formatYear(minYear) : 'Unknown'} to ${maxYear ? formatYear(maxYear) : 'Unknown'}` },
+        { property: 'og:type', content: 'article' },
+        { name: 'keywords', content: `${loaderData.name}, war history, battles, military history, ${battles.slice(0, 5).map(b => b.winner?.name).filter(Boolean).join(', ')}` },
+      ],
+    }
+  },
   notFoundComponent: () => (
     <div className="mx-auto max-w-3xl px-6 py-24 text-center">
       <h1 className="font-serif text-4xl">Entry not found</h1>
@@ -187,51 +204,101 @@ function WarDetail() {
             No battles indexed for this war.
           </p>
         ) : (
-          <ol className="space-y-0">
+          <ol className="grid gap-4" aria-label="List of battles">
             {battles.map((b, i) => (
               <li
                 key={b.id}
-                className="grid grid-cols-12 gap-4 py-5 border-t border-border"
+                className="group relative border border-border rounded-lg overflow-hidden hover:border-accent/50 transition-colors"
               >
-                <div className="col-span-2 font-mono text-xs tabular-nums pt-1">
-                  <Link
-                    to="/$year"
-                    params={{ year: String(b.year) }}
-                    className="hover:underline hover:text-accent transition-colors"
-                  >
-                    {formatYear(b.year)}
-                  </Link>
-                </div>
-                <div className="col-span-10">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <h3 className="font-serif text-xl">
-                      <span className="text-foreground/70 mr-3 font-mono text-xs">
+                <Link
+                  to="/battles/$battleId"
+                  params={{ battleId: String(b.id) }}
+                  className="block p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`View details for ${b.name}`}
+                >
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="font-mono text-xs text-foreground/50 tabular-nums"
+                        aria-hidden="true"
+                      >
                         {String(i + 1).padStart(2, '0')}
                       </span>
-                      <Link
-                        to="/battles/$battleId"
-                        params={{ battleId: String(b.id) }}
-                        className="hover:underline underline-offset-4 decoration-1"
-                      >
+                      <h3 className="font-serif text-xl leading-tight group-hover:underline underline-offset-4 decoration-1">
                         {b.name}
-                      </Link>
-                    </h3>
-                    {b.winner && (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#16a34a] whitespace-nowrap">
-                        {b.winner.name}
+                      </h3>
+                    </div>
+                    {b.massacre && (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-destructive/10 text-destructive text-xs rounded-sm border border-destructive/30 font-mono uppercase tracking-wider shrink-0"
+                        aria-label="Marked as massacre"
+                      >
+                        <Skull className="w-3.5 h-3.5" aria-hidden="true" />
+                        Massacre
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-foreground/70 mt-1">
-                    {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
-                    {b.country && <span> · {b.country.name}</span>}
-                  </div>
-                  {b.massacre && (
-                    <span className="inline-block mt-2 px-2 py-0.5 bg-destructive/20 text-destructive text-xs rounded-sm border border-destructive/40 font-mono uppercase tracking-widest">
-                      Massacre
+
+                  {/* Meta info row */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-foreground/60 mb-3">
+                    <span className="inline-flex items-center gap-1.5" aria-label={`Year ${formatYear(b.year)}`}>
+                      <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                      <Link
+                        to="/$year"
+                        params={{ year: String(b.year) }}
+                        className="hover:text-foreground transition-colors tabular-nums"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Filter by year ${formatYear(b.year)}`}
+                      >
+                        {formatYear(b.year)}
+                      </Link>
                     </span>
+                    <span className="inline-flex items-center gap-1.5" aria-label={`Location: ${b.latitude.toFixed(2)}°N, ${b.longitude.toFixed(2)}°E`}>
+                      <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                      {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
+                    </span>
+                    {b.country && (
+                      <span className="inline-flex items-center gap-1.5" aria-label={`Country: ${b.country.name}`}>
+                        <Shield className="w-3.5 h-3.5" aria-hidden="true" />
+                        {b.country.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Winner/Loser */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {b.winner && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 text-success text-sm rounded-sm border border-success/30 font-medium">
+                        <Crown className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="font-mono uppercase tracking-wider opacity-70">Winner:</span> {b.winner.name}
+                      </span>
+                    )}
+                    {b.loser && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted/30 text-foreground/60 text-sm rounded-sm border border-border/50">
+                        <span className="font-mono uppercase tracking-wider opacity-70">Loser:</span> {b.loser.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Participants */}
+                  {b.participants.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1  text-sm rounded-sm border border-accent/40 font-medium">
+                        <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="font-mono uppercase tracking-wider opacity-70">Participants:</span>
+                      </span>
+                      {b.participants.map((p) => (
+                        <span
+                          key={p.id}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-foreground/70 text-sm rounded-sm border border-accent/30"
+                        >
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                </div>
+                </Link>
               </li>
             ))}
           </ol>
