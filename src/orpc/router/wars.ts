@@ -1,4 +1,4 @@
-import { db } from '#/db/index.ts'
+import { getDb } from '#/db/index.ts'
 import { os } from '@orpc/server'
 import { z } from 'zod'
 import { battles, wars } from '#/db/schema.ts'
@@ -9,6 +9,7 @@ export const getWar = os
   .input(z.object({ warId: z.string() }))
 
   .handler(async ({ input }) => {
+    const db = getDb()
     const war = await db.query.wars.findFirst({
       where: {
         id: Number(input.warId),
@@ -32,6 +33,7 @@ export const getBattle = os
   .input(z.object({ battleId: z.string() }))
 
   .handler(async ({ input }) => {
+    const db = getDb()
     const battle = await db.query.battles.findFirst({
       where: {
         id: Number(input.battleId),
@@ -57,6 +59,7 @@ export const listAllBattles = os
     }),
   )
   .handler(async ({ input: { year, page = 1, pageSize = 24 } }) => {
+    const db = getDb()
     const whereClause = year ? eq(battles.year, Number(year)) : undefined
     const totalBattles = await db.$count(battles, whereClause)
     const totalPages = Math.max(1, Math.ceil(totalBattles / pageSize))
@@ -97,6 +100,7 @@ export const homePage = os
   )
 
   .handler(async ({ input: { page = 1, warName } }) => {
+    const db = getDb()
     const filters: SQL[] = []
     if (warName) filters.push(ilike(wars.name, `%${warName}%`))
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "war-history",
+  // Set this to today's date
+  "compatibility_date": "2026-06-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true,
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "46f6a009fcfb4d1c9ac0f62798ce9550",
+    },
+  ],
+}
