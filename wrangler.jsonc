@@ -14,4 +14,7 @@
       "id": "46f6a009fcfb4d1c9ac0f62798ce9550",
     },
   ],
+  "placement": {
+    "mode": "smart",
+  },
 }
