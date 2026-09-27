@@ -10,7 +10,7 @@ export default defineConfig({
     url: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
-      // ca: fs.readFileSync('./certs/ca.pem'),
+      ca: fs.readFileSync('./certs/ca.pem'),
     },
   },
   migrations: {
