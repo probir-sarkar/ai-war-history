@@ -3,6 +3,7 @@ import { routeTree } from './routeTree.gen'
 
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { getContext } from './integrations/tanstack-query/root-provider'
+import { RoutePending } from './components/pending'
 
 export function getRouter() {
   const context = getContext()
@@ -11,8 +12,14 @@ export function getRouter() {
     routeTree,
     context,
     scrollRestoration: true,
-    defaultPreload: false,
-    defaultPreloadStaleTime: 0,
+    // Prefetch a route's chunk + loader data on link hover/focus so the
+    // click itself is instant.
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 30_000,
+    // Give slow client-side loaders visible feedback quickly instead of a
+    // frozen page.
+    defaultPendingMs: 200,
+    defaultPendingComponent: RoutePending,
   })
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient })

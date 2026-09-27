@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
 import { Pagination } from '#/components/pagination.tsx'
 import { parsePageParam } from '#/lib/pagination.ts'
+import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
 
 const PAGE_SIZE = 24
@@ -13,21 +14,34 @@ export const Route = createFileRoute('/battles/')({
     page: parsePageParam(search),
   }),
   loaderDeps: ({ search: { page } }) => ({ page: page ?? 1 }),
-  loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
+  loader: async ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
       orpc.listAllBattles.queryOptions({
         input: { page: deps.page, pageSize: PAGE_SIZE },
       }),
-    )
-  },
-  head: () => ({
+    ),
+  head: ({ loaderData, match }) => ({
     meta: [
-      { title: 'Battles — War History Archive' },
+      {
+        title:
+          match.search.page && match.search.page > 1
+            ? `Battles (page ${match.search.page}) — War History Archive`
+            : 'Battles — War History Archive',
+      },
       {
         name: 'description',
-        content:
-          'All battles indexed across history, linked to their parent war.',
+        content: loaderData
+          ? `All ${loaderData.total} battles indexed across history, each linked to its parent war.`
+          : 'All battles indexed across history, linked to their parent war.',
       },
+      { property: 'og:title', content: 'Battles — War History Archive' },
+      {
+        property: 'og:url',
+        content: absoluteUrl('/battles', match.search.page),
+      },
+    ],
+    links: [
+      { rel: 'canonical', href: absoluteUrl('/battles', match.search.page) },
     ],
   }),
   component: BattlesPage,
@@ -113,21 +127,19 @@ function BattlesPage() {
         </div>
       ) : (
         items.map((b) => (
-          <div
+          <Link
             key={b.id}
-            className="grid grid-cols-12 gap-4 py-5 border-b border-border hover:bg-accent/5 transition-colors"
+            to="/battles/$battleId"
+            params={{ battleId: String(b.id) }}
+            className="grid grid-cols-12 gap-4 py-5 border-b border-border hover:bg-accent/5 transition-colors group"
           >
             <div className="col-span-2 font-mono text-xs tabular-nums pt-1">
               {formatYear(b.year)}
             </div>
             <div className="col-span-10 md:col-span-4">
-              <Link
-                to="/battles/$battleId"
-                params={{ battleId: String(b.id) }}
-                className="font-serif text-xl leading-snug hover:underline underline-offset-4 decoration-1"
-              >
+              <span className="font-serif text-xl leading-snug group-hover:underline underline-offset-4 decoration-1">
                 {b.name}
-              </Link>
+              </span>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {b.participants.map((p) => (
                   <span
@@ -148,13 +160,14 @@ function BattlesPage() {
                 <Link
                   to="/wars/$warId"
                   params={{ warId: String(b.war.id) }}
+                  onClick={(e) => e.stopPropagation()}
                   className="text-sm underline underline-offset-4 decoration-1 hover:no-underline"
                 >
                   {b.war.name}
                 </Link>
               )}
             </div>
-          </div>
+          </Link>
         ))
       )}
 

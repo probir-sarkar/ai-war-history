@@ -1,0 +1,1 @@
+CREATE INDEX "battles_war_id_year_id_index" ON "battles" ("war_id","year","id");

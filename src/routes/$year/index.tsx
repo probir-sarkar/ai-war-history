@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
 import { Pagination } from '#/components/pagination.tsx'
 import { parsePageParam } from '#/lib/pagination.ts'
+import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
 import {
   MapPin,
@@ -17,35 +18,69 @@ import {
 
 const PAGE_SIZE = 24
 
+/* Anything outside recorded history is not a year — treat it as a 404
+   (and a 200 "no battles" page for e.g. /999999 would be a soft 404). */
+const MIN_YEAR = -5000
+const MAX_YEAR = 2100
+
+function parseYear(raw: string): number | null {
+  if (!/^-?\d+$/.test(raw)) return null
+  const year = Number(raw)
+  return year >= MIN_YEAR && year <= MAX_YEAR ? year : null
+}
+
 export const Route = createFileRoute('/$year/')({
   validateSearch: (search: Record<string, unknown>): PageSearch => ({
     page: parsePageParam(search),
   }),
   loaderDeps: ({ search: { page } }) => ({ page: page ?? 1 }),
   loader: async ({ context, params, deps }) => {
-    // Years can be negative (BC); anything else is not a year
-    if (!/^-?\d+$/.test(params.year)) throw notFound()
-    await context.queryClient.ensureQueryData(
+    const year = parseYear(params.year)
+    if (year === null) throw notFound()
+    return context.queryClient.ensureQueryData(
       orpc.listAllBattles.queryOptions({
         input: {
-          year: Number(params.year),
+          year,
           page: deps.page,
           pageSize: PAGE_SIZE,
         },
       }),
     )
   },
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.year} — War History Archive` },
+  head: ({ params, loaderData, match }) => {
+    const year = parseYear(params.year)
+    if (year === null) return { meta: [] }
+
+    const meta: Record<string, string>[] = [
+      { title: `${formatYear(year)} — War History Archive` },
       {
         name: 'description',
-        content: `Battles and conflicts from the year ${params.year}.`,
+        content: loaderData
+          ? `${loaderData.total} battles and conflicts from the year ${formatYear(year)}, with participants, locations, and outcomes.`
+          : `Battles and conflicts from the year ${formatYear(year)}.`,
       },
-    ],
-  }),
+      {
+        property: 'og:title',
+        content: `${formatYear(year)} — War History Archive`,
+      },
+      {
+        property: 'og:url',
+        content: absoluteUrl(`/${year}`, match.search.page),
+      },
+    ]
+    // Years with no recorded battles get crawled as empty pages otherwise.
+    if (loaderData && loaderData.total === 0) {
+      meta.push({ name: 'robots', content: 'noindex' })
+    }
+
+    return {
+      meta,
+      links: [
+        { rel: 'canonical', href: absoluteUrl(`/${year}`, match.search.page) },
+      ],
+    }
+  },
   component: RouteComponent,
-  ssr: true,
 })
 
 function RouteComponent() {
@@ -80,7 +115,7 @@ function RouteComponent() {
   }
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       {/* Page Header */}
       <header className="border-b border-accent bg-background">
         <div className="max-w-5xl mx-auto px-6 py-10">
@@ -96,7 +131,7 @@ function RouteComponent() {
       </header>
 
       {/* Battles Grid */}
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-6 py-10">
         {battles.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-foreground/70 text-lg">
@@ -116,14 +151,7 @@ function RouteComponent() {
           totalPages={totalPages}
           onPageChange={handlePageChange}
         />
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border mt-16">
-        <div className="max-w-5xl mx-auto px-6 py-8 text-center text-foreground/70 text-sm">
-          <p>A record of conflict throughout history</p>
-        </div>
-      </footer>
+      </div>
     </div>
   )
 }
@@ -176,7 +204,7 @@ function BattleCard({ battle }: { battle: BattlesData['items'][number] }) {
           {/* Outcome */}
           <div className="flex flex-col items-end gap-1 text-xs">
             {battle.winner && (
-              <div className="flex items-center gap-1.5 text-[#16a34a]">
+              <div className="flex items-center gap-1.5 text-success">
                 <Trophy className="w-3.5 h-3.5" />
                 <span className="font-medium">{battle.winner.name}</span>
               </div>
