@@ -7,5 +7,6 @@ worker-configuration.d.ts
 src/routeTree.gen.ts
 migrations/**/snapshot.json
 THEME.md
+.kilo
 .tanstack
 .wrangler
