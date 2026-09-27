@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { env } from '#/env.ts'
 import { defineConfig } from 'drizzle-kit'
 

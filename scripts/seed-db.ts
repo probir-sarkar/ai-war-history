@@ -17,7 +17,7 @@ import { relations } from '#/db/relations.ts'
    DATABASE
 ========================================================= */
 
-export const db = drizzle(process.env.DATABASE_URL!, {
+export const db = drizzle(process.env.DATABASE_URL, {
   relations,
 })
 

@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, primaryKey, unique } from 'drizzle-orm/pg-core'
+import { index, pgEnum, pgTable, primaryKey, unique } from 'drizzle-orm/pg-core'
 
 export const theatresEnum = pgEnum('theatres', ['Air', 'Land', 'Sea'])
 export const battles = pgTable(
@@ -20,7 +20,14 @@ export const battles = pgTable(
       .notNull()
       .references(() => wars.id),
   }),
-  (t) => [unique().on(t.name, t.year)],
+  (t) => [
+    unique().on(t.name, t.year),
+    index().on(t.year),
+    index().on(t.warId),
+    index().on(t.countryId),
+    index().on(t.winnerId),
+    index().on(t.loserId),
+  ],
 )
 
 export const wars = pgTable('wars', (t) => ({
@@ -54,5 +61,6 @@ export const battlesToParticipants = pgTable(
     primaryKey({
       columns: [t.battleId, t.participantId],
     }),
+    index().on(t.participantId),
   ],
 )

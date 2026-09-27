@@ -1,5 +1,10 @@
+import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
+import { Pagination } from '#/components/pagination.tsx'
+import { parsePageParam } from '#/lib/pagination.ts'
+import type { PageSearch } from '#/lib/pagination.ts'
 import {
   MapPin,
   Trophy,
@@ -10,9 +15,26 @@ import {
   Skull,
 } from 'lucide-react'
 
+const PAGE_SIZE = 24
+
 export const Route = createFileRoute('/$year/')({
-  loader: async ({ params }) =>
-    await orpc.listAllBattles.call({ year: params.year }),
+  validateSearch: (search: Record<string, unknown>): PageSearch => ({
+    page: parsePageParam(search),
+  }),
+  loaderDeps: ({ search: { page } }) => ({ page: page ?? 1 }),
+  loader: async ({ context, params, deps }) => {
+    // Years can be negative (BC); anything else is not a year
+    if (!/^-?\d+$/.test(params.year)) throw notFound()
+    await context.queryClient.ensureQueryData(
+      orpc.listAllBattles.queryOptions({
+        input: {
+          year: Number(params.year),
+          page: deps.page,
+          pageSize: PAGE_SIZE,
+        },
+      }),
+    )
+  },
   head: ({ params }) => ({
     meta: [
       { title: `${params.year} — War History Archive` },
@@ -27,8 +49,35 @@ export const Route = createFileRoute('/$year/')({
 })
 
 function RouteComponent() {
-  const battles = Route.useLoaderData()
   const { year } = Route.useParams()
+  const { page: pageParam } = Route.useSearch()
+  const page = pageParam ?? 1
+  const navigate = Route.useNavigate()
+
+  const battlesQuery = useQuery(
+    orpc.listAllBattles.queryOptions({
+      input: {
+        year: Number(year),
+        page,
+        pageSize: PAGE_SIZE,
+      },
+    }),
+  )
+
+  const {
+    items: battles = [],
+    total = 0,
+    totalPages = 1,
+  } = battlesQuery.data ?? { items: [], total: 0, totalPages: 1 }
+
+  const handlePageChange = (newPage: number) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        page: newPage === 1 ? undefined : newPage,
+      }),
+    })
+  }
 
   return (
     <div className="min-h-screen ">
@@ -37,10 +86,10 @@ function RouteComponent() {
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="flex items-baseline gap-4">
             <h1 className="text-4xl md:text-5xl text-foreground tracking-tight font-serif">
-              {year}
+              {formatYear(Number(year))}
             </h1>
             <span className="text-foreground/70 text-lg font-light">
-              {battles.length} {battles.length === 1 ? 'Battle' : 'Battles'}
+              {total} {total === 1 ? 'Battle' : 'Battles'}
             </span>
           </div>
         </div>
@@ -61,6 +110,12 @@ function RouteComponent() {
             ))}
           </div>
         )}
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </main>
 
       {/* Footer */}
@@ -73,11 +128,12 @@ function RouteComponent() {
   )
 }
 
-function BattleCard({
-  battle,
-}: {
-  battle: Awaited<ReturnType<typeof orpc.listAllBattles.call>>[number]
-}) {
+type BattlesQueryOptions = ReturnType<typeof orpc.listAllBattles.queryOptions>
+type BattlesData = Awaited<
+  ReturnType<NonNullable<BattlesQueryOptions['queryFn']>>
+>
+
+function BattleCard({ battle }: { battle: BattlesData['items'][number] }) {
   const theatreIcon = (name: string) => {
     const lower = name.toLowerCase()
     if (lower.includes('land') || lower.includes('ground'))
@@ -140,7 +196,8 @@ function BattleCard({
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" />
             <span>
-              {battle.latitude.toFixed(1)}°N, {battle.longitude.toFixed(1)}°E
+              {formatLatitude(battle.latitude, 1)},{' '}
+              {formatLongitude(battle.longitude, 1)}
             </span>
             {battle.country && <span>· {battle.country.name}</span>}
           </div>
@@ -177,7 +234,7 @@ function BattleCard({
         {/* Participants */}
         {battle.participants.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
-            {battle.participants.map((p: { id: number; name: string }) => (
+            {battle.participants.map((p) => (
               <span
                 key={p.id}
                 className="px-2 py-0.5 bg-muted text-foreground/80 text-xs rounded-md border border-border"
