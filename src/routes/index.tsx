@@ -1,13 +1,33 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { useState } from 'react'
-import type { SubmitEvent } from 'react'
-
 import { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
-import { cn } from '#/lib/utils.ts'
+import type { FormEvent } from 'react'
+
+import { Pagination } from '#/components/pagination.tsx'
+import { parsePageParam } from '#/lib/pagination.ts'
+import type { PageSearch } from '#/lib/pagination.ts'
+
+interface IndexSearch extends PageSearch {
+  q?: string | undefined
+}
 
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>): IndexSearch => ({
+    page: parsePageParam(search),
+    q:
+      typeof search.q === 'string' && search.q.trim().length > 0
+        ? search.q.trim()
+        : undefined,
+  }),
+  loaderDeps: ({ search: { page, q } }) => ({ page: page ?? 1, q }),
+  loader: async ({ context, deps }) => {
+    await context.queryClient.ensureQueryData(
+      orpc.homePage.queryOptions({
+        input: { page: deps.page, warName: deps.q },
+      }),
+    )
+  },
   head: () => ({
     meta: [
       { title: 'Wars — War History Archive' },
@@ -21,36 +41,49 @@ export const Route = createFileRoute('/')({
 })
 
 function Index() {
-  const [page, setPage] = useState(1)
-  const [filterPayload, setFilterPayload] = useState<{
-    q: string
-  }>({ q: '' })
+  const { page: pageParam, q } = Route.useSearch()
+  const page = pageParam ?? 1
+  const navigate = Route.useNavigate()
 
-  const handleFilterSubmit = (e: SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    setFilterPayload({
-      q: formData.get('q') as string,
-    })
-    setPage(1) // Reset to page 1 when filter changes
-  }
-
-  // Fetch wars data
   const warsQuery = useQuery(
     orpc.homePage.queryOptions({
-      input: {
-        page,
-        warName: filterPayload.q,
-      },
+      input: { page, warName: q },
     }),
   )
 
   const {
     items = [],
-    total,
-    totalPages,
-  } = warsQuery.data ?? { items: [], total: 0, totalPages: 1 }
-  const safePage = Math.min(page, totalPages)
+    total = 0,
+    totalPages = 1,
+    currentPage = 1,
+  } = warsQuery.data ?? {
+    items: [],
+    total: 0,
+    totalPages: 1,
+    currentPage: 1,
+  }
+
+  const handleFilterSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const nextQuery = String(formData.get('q') ?? '').trim()
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        q: nextQuery || undefined,
+        page: undefined, // Reset to page 1 when filter changes
+      }),
+    })
+  }
+
+  const handlePageChange = (newPage: number) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        page: newPage === 1 ? undefined : newPage,
+      }),
+    })
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -77,11 +110,17 @@ function Index() {
           className="grid md:grid-cols-[1fr_auto] gap-6 items-end"
         >
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2">
+            <label
+              htmlFor="war-search"
+              className="block font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 mb-2"
+            >
               Search
             </label>
             <input
+              id="war-search"
               name="q"
+              key={q ?? ''}
+              defaultValue={q ?? ''}
               placeholder="War name..."
               className="w-full bg-transparent border-b border-foreground px-0 py-2 outline-none placeholder:text-foreground/50"
             />
@@ -102,7 +141,7 @@ function Index() {
           {total} {total === 1 ? 'entry' : 'entries'}
         </span>
         <span>
-          Page {safePage} / {totalPages}
+          Page {currentPage} / {totalPages}
         </span>
       </div>
 
@@ -148,65 +187,11 @@ function Index() {
         )}
       </section>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <nav className="flex items-center justify-between pt-8 font-mono text-xs uppercase tracking-[0.18em]">
-          <button
-            disabled={safePage <= 1}
-            onClick={() => setPage(safePage - 1)}
-            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            ← Prev
-          </button>
-          <div className="flex items-center gap-1">
-            {pageNumbers(safePage, totalPages).map((p, i) =>
-              p === '…' ? (
-                <span key={`e-${i}`} className="px-2 text-foreground/70">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={cn(
-                    'min-w-9 h-9 px-2 border transition-colors',
-                    p === safePage
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-border hover:bg-accent/10'
-                  )}
-                >
-                  {p}
-                </button>
-              ),
-            )}
-          </div>
-          <button
-            disabled={safePage >= totalPages}
-            onClick={() => setPage(safePage + 1)}
-            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            Next →
-          </button>
-        </nav>
-      )}
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   )
-}
-
-function pageNumbers(current: number, total: number): (number | '…')[] {
-  const pages: (number | '…')[] = []
-  const push = (n: number | '…') => pages.push(n)
-  const window = 1
-  for (let i = 1; i <= total; i++) {
-    if (
-      i === 1 ||
-      i === total ||
-      (i >= current - window && i <= current + window)
-    ) {
-      push(i)
-    } else if (pages[pages.length - 1] !== '…') {
-      push('…')
-    }
-  }
-  return pages
 }

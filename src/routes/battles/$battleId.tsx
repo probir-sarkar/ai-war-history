@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { formatYear } from '#/lib/format.ts'
+import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
 
 export const Route = createFileRoute('/battles/$battleId')({
   loader: async ({ params }) => {
+    if (!/^\d+$/.test(params.battleId)) throw notFound()
     const result = await orpc.getBattle.call({ battleId: params.battleId })
     if (!result) throw notFound()
     return result
@@ -11,8 +12,13 @@ export const Route = createFileRoute('/battles/$battleId')({
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `Battle of ${loaderData.name} (${loaderData.year}) — War History Archive` },
-          { name: 'description', content: `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}` },
+          {
+            title: `Battle of ${loaderData.name} (${loaderData.year}) — War History Archive`,
+          },
+          {
+            name: 'description',
+            content: `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}`,
+          },
           { property: 'og:title', content: `Battle of ${loaderData.name}` },
         ]
       : [],
@@ -104,16 +110,22 @@ function BattleDetail() {
                     <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">
                       Victor
                     </span>
-                    <span className="font-serif text-xl">{battle.winner.name}</span>
+                    <span className="font-serif text-xl">
+                      {battle.winner.name}
+                    </span>
                   </div>
                 )}
-                {battle.winner && battle.loser && <span className="text-muted-foreground">vs</span>}
+                {battle.winner && battle.loser && (
+                  <span className="text-muted-foreground">vs</span>
+                )}
                 {battle.loser && (
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground block mb-1">
                       Defeated
                     </span>
-                    <span className="font-serif text-xl">{battle.loser.name}</span>
+                    <span className="font-serif text-xl">
+                      {battle.loser.name}
+                    </span>
                   </div>
                 )}
               </div>
@@ -128,7 +140,8 @@ function BattleDetail() {
           Coordinates
         </div>
         <div className="font-serif text-lg">
-          {battle.latitude.toFixed(4)}°N, {battle.longitude.toFixed(4)}°E
+          {formatLatitude(battle.latitude, 4)},{' '}
+          {formatLongitude(battle.longitude, 4)}
         </div>
       </section>
 

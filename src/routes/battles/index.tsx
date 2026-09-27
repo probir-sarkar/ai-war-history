@@ -1,12 +1,25 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { formatYear } from '#/lib/format.ts'
+import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
+import { Pagination } from '#/components/pagination.tsx'
+import { parsePageParam } from '#/lib/pagination.ts'
+import type { PageSearch } from '#/lib/pagination.ts'
 
 const PAGE_SIZE = 24
 
 export const Route = createFileRoute('/battles/')({
+  validateSearch: (search: Record<string, unknown>): PageSearch => ({
+    page: parsePageParam(search),
+  }),
+  loaderDeps: ({ search: { page } }) => ({ page: page ?? 1 }),
+  loader: async ({ context, deps }) => {
+    await context.queryClient.ensureQueryData(
+      orpc.listAllBattles.queryOptions({
+        input: { page: deps.page, pageSize: PAGE_SIZE },
+      }),
+    )
+  },
   head: () => ({
     meta: [
       { title: 'Battles — War History Archive' },
@@ -21,15 +34,13 @@ export const Route = createFileRoute('/battles/')({
 })
 
 function BattlesPage() {
-  const [page, setPage] = useState(1)
+  const { page: pageParam } = Route.useSearch()
+  const page = pageParam ?? 1
+  const navigate = Route.useNavigate()
 
-  // Fetch battles data with pagination
   const battlesQuery = useQuery(
     orpc.listAllBattles.queryOptions({
-      input: {
-        page,
-        pageSize: PAGE_SIZE,
-      },
+      input: { page, pageSize: PAGE_SIZE },
     }),
   )
 
@@ -51,7 +62,12 @@ function BattlesPage() {
   const maxYear = years.length > 0 ? Math.max(...years) : 0
 
   const handlePageChange = (newPage: number) => {
-    setPage(newPage)
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        page: newPage === 1 ? undefined : newPage,
+      }),
+    })
   }
 
   return (
@@ -124,7 +140,7 @@ function BattlesPage() {
               </div>
             </div>
             <div className="hidden md:block col-span-3 text-sm pt-1.5">
-              {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
+              {formatLatitude(b.latitude)}, {formatLongitude(b.longitude)}
               {b.country && <span className="ml-1">· {b.country.name}</span>}
             </div>
             <div className="hidden md:block col-span-3 pt-1.5">
@@ -142,64 +158,11 @@ function BattlesPage() {
         ))
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <nav className="flex items-center justify-between pt-8 font-mono text-xs uppercase tracking-[0.18em]">
-          <button
-            disabled={currentPage <= 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            ← Prev
-          </button>
-          <div className="flex items-center gap-1">
-            {pageNumbers(currentPage, totalPages).map((p, i) =>
-              p === '…' ? (
-                <span key={`e-${i}`} className="px-2 opacity-50">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => handlePageChange(p)}
-                  className={`min-w-9 h-9 px-2 border ${
-                    p === currentPage
-                      ? 'border-foreground bg-[rgb(var(--color-foreground))] text-[rgb(var(--color-background))]'
-                      : 'border-border hover:bg-accent/10'
-                  } transition-colors`}
-                >
-                  {p}
-                </button>
-              ),
-            )}
-          </div>
-          <button
-            disabled={currentPage >= totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-            className="border border-border px-4 py-2 hover:bg-accent/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            Next →
-          </button>
-        </nav>
-      )}
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   )
-}
-
-function pageNumbers(current: number, total: number): (number | '…')[] {
-  const pages: (number | '…')[] = []
-  const push = (n: number | '…') => pages.push(n)
-  const window = 1
-  for (let i = 1; i <= total; i++) {
-    if (
-      i === 1 ||
-      i === total ||
-      (i >= current - window && i <= current + window)
-    ) {
-      push(i)
-    } else if (pages[pages.length - 1] !== '…') {
-      push('…')
-    }
-  }
-  return pages
 }

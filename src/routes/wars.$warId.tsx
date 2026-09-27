@@ -1,23 +1,17 @@
 import * as React from 'react'
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
-import { formatYear } from '#/lib/format.ts'
+import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '#/components/ui/collapsible'
-import {
-  MapPin,
-  Calendar,
-  Users,
-  Skull,
-  Crown,
-  Shield,
-} from 'lucide-react'
+import { MapPin, Calendar, Users, Skull, Crown, Shield } from 'lucide-react'
 
 export const Route = createFileRoute('/wars/$warId')({
   loader: async ({ params }) => {
+    if (!/^\d+$/.test(params.warId)) throw notFound()
     const result = await orpc.getWar.call({ warId: params.warId })
     if (!result) throw notFound()
     return result
@@ -31,15 +25,27 @@ export const Route = createFileRoute('/wars/$warId')({
 
     return {
       meta: [
-        { title: `${loaderData.name} (${minYear ? formatYear(minYear) : 'Unknown'}–${maxYear ? formatYear(maxYear) : 'Unknown'}) — War History Archive` },
+        {
+          title: `${loaderData.name} (${minYear ? formatYear(minYear) : 'Unknown'}–${maxYear ? formatYear(maxYear) : 'Unknown'}) — War History Archive`,
+        },
         {
           name: 'description',
           content: `Comprehensive history of ${loaderData.name}, including ${battles.length} battles spanning ${minYear && maxYear ? maxYear - minYear : 0} years. Detailed records of participants, outcomes, and historical significance.`,
         },
         { property: 'og:title', content: loaderData.name },
-        { property: 'og:description', content: `${battles.length} battles documented from ${minYear ? formatYear(minYear) : 'Unknown'} to ${maxYear ? formatYear(maxYear) : 'Unknown'}` },
+        {
+          property: 'og:description',
+          content: `${battles.length} battles documented from ${minYear ? formatYear(minYear) : 'Unknown'} to ${maxYear ? formatYear(maxYear) : 'Unknown'}`,
+        },
         { property: 'og:type', content: 'article' },
-        { name: 'keywords', content: `${loaderData.name}, war history, battles, military history, ${battles.slice(0, 5).map(b => b.winner?.name).filter(Boolean).join(', ')}` },
+        {
+          name: 'keywords',
+          content: `${loaderData.name}, war history, battles, military history, ${battles
+            .slice(0, 5)
+            .map((b) => b.winner?.name)
+            .filter(Boolean)
+            .join(', ')}`,
+        },
       ],
     }
   },
@@ -61,7 +67,7 @@ function WarDetail() {
   const war = Route.useLoaderData()
   const battles = war.battles
   const theaters = [
-    ...new Set(battles.flatMap((b) => b.theatres ).filter(Boolean)),
+    ...new Set(battles.flatMap((b) => b.theatres).filter(Boolean)),
   ]
   const [moreCombatantsOpen, setMoreCombatantsOpen] = React.useState(false)
 
@@ -242,7 +248,10 @@ function WarDetail() {
 
                   {/* Meta info row */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-foreground/60 mb-3">
-                    <span className="inline-flex items-center gap-1.5" aria-label={`Year ${formatYear(b.year)}`}>
+                    <span
+                      className="inline-flex items-center gap-1.5"
+                      aria-label={`Year ${formatYear(b.year)}`}
+                    >
                       <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                       <Link
                         to="/$year"
@@ -254,12 +263,19 @@ function WarDetail() {
                         {formatYear(b.year)}
                       </Link>
                     </span>
-                    <span className="inline-flex items-center gap-1.5" aria-label={`Location: ${b.latitude.toFixed(2)}°N, ${b.longitude.toFixed(2)}°E`}>
+                    <span
+                      className="inline-flex items-center gap-1.5"
+                      aria-label={`Location: ${formatLatitude(b.latitude, 2)}, ${formatLongitude(b.longitude, 2)}`}
+                    >
                       <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                      {b.latitude.toFixed(2)}°N, {b.longitude.toFixed(2)}°E
+                      {formatLatitude(b.latitude, 2)},{' '}
+                      {formatLongitude(b.longitude, 2)}
                     </span>
                     {b.country && (
-                      <span className="inline-flex items-center gap-1.5" aria-label={`Country: ${b.country.name}`}>
+                      <span
+                        className="inline-flex items-center gap-1.5"
+                        aria-label={`Country: ${b.country.name}`}
+                      >
                         <Shield className="w-3.5 h-3.5" aria-hidden="true" />
                         {b.country.name}
                       </span>
@@ -271,12 +287,18 @@ function WarDetail() {
                     {b.winner && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-success/10 text-success text-sm rounded-sm border border-success/30 font-medium">
                         <Crown className="w-3.5 h-3.5" aria-hidden="true" />
-                        <span className="font-mono uppercase tracking-wider opacity-70">Winner:</span> {b.winner.name}
+                        <span className="font-mono uppercase tracking-wider opacity-70">
+                          Winner:
+                        </span>{' '}
+                        {b.winner.name}
                       </span>
                     )}
                     {b.loser && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-muted/30 text-foreground/60 text-sm rounded-sm border border-border/50">
-                        <span className="font-mono uppercase tracking-wider opacity-70">Loser:</span> {b.loser.name}
+                        <span className="font-mono uppercase tracking-wider opacity-70">
+                          Loser:
+                        </span>{' '}
+                        {b.loser.name}
                       </span>
                     )}
                   </div>
@@ -286,7 +308,9 @@ function WarDetail() {
                     <div className="flex flex-wrap gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1  text-sm rounded-sm border border-accent/40 font-medium">
                         <Users className="w-3.5 h-3.5" aria-hidden="true" />
-                        <span className="font-mono uppercase tracking-wider opacity-70">Participants:</span>
+                        <span className="font-mono uppercase tracking-wider opacity-70">
+                          Participants:
+                        </span>
                       </span>
                       {b.participants.map((p) => (
                         <span
