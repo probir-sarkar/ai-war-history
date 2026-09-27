@@ -20,6 +20,7 @@ export default [
       'prettier.config.js',
       'data-clean',
       'dist',
+      '.kilo',
       'worker-configuration.d.ts',
       'src/routeTree.gen.ts',
     ],
