@@ -5,6 +5,7 @@ import { Search, X } from 'lucide-react'
 import type { FormEvent } from 'react'
 
 import { Pagination } from '#/components/pagination.tsx'
+import { itemListJsonLd, jsonLdScript } from '#/lib/jsonld.ts'
 import { parsePageParam } from '#/lib/pagination.ts'
 import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
@@ -47,6 +48,18 @@ export const Route = createFileRoute('/')({
       { property: 'og:url', content: absoluteUrl('/', match.search.page) },
     ],
     links: [{ rel: 'canonical', href: absoluteUrl('/', match.search.page) }],
+    scripts: loaderData
+      ? [
+          jsonLdScript(
+            itemListJsonLd(
+              loaderData.items.map((w) => ({
+                name: w.name,
+                url: absoluteUrl(`/wars/${w.id}`),
+              })),
+            ),
+          ),
+        ]
+      : [],
   }),
   component: Index,
 })

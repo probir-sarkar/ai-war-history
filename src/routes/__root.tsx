@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 
 import { Navigation } from '../components/navigation'
+import { jsonLdScript, websiteJsonLd } from '../lib/jsonld'
 import { absoluteUrl } from '../lib/site'
 
 import appCss from '../styles.css?url'
@@ -36,6 +37,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       { property: 'og:site_name', content: 'War History Archive' },
       { property: 'og:image', content: absoluteUrl('/og-image.jpg') },
+      { property: 'og:image:width', content: '1730' },
+      { property: 'og:image:height', content: '909' },
+      {
+        property: 'og:image:alt',
+        content:
+          'War History Archive — a record of conflict, from antiquity to now',
+      },
       { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:image', content: absoluteUrl('/og-image.jpg') },
       {
@@ -50,6 +58,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
     ],
+    scripts: [jsonLdScript(websiteJsonLd())],
   }),
   shellComponent: RootDocument,
   notFoundComponent: () => (
