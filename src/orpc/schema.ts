@@ -26,7 +26,7 @@ export const warSchema = z.object({
 })
 
 /** Battle columns exactly as the API exposes them. */
-export const battleColumnsSchema = {
+const battleColumnsSchema = {
   id: z.number(),
   name: z.string(),
   year: z.number(),
@@ -54,8 +54,6 @@ export const battleWithRelationsSchema = z.object({
 export const battleWithWarSchema = battleWithRelationsSchema.extend({
   war: warSchema.nullable(),
 })
-
-export type BattleWithWar = z.infer<typeof battleWithWarSchema>
 
 /** Wraps a list schema with the pagination metadata every list returns. */
 export const paginated = <T extends z.ZodType>(item: T) =>
