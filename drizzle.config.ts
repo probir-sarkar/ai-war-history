@@ -1,13 +1,17 @@
 import 'dotenv/config'
-import { env } from '#/env.ts'
 import { defineConfig } from 'drizzle-kit'
+import fs from 'node:fs'
 
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: env.DATABASE_URL,
+    url: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+      // ca: fs.readFileSync('./certs/ca.pem'),
+    },
   },
   migrations: {
     schema: 'public',
