@@ -3,9 +3,10 @@ import '#/polyfill'
 import { createFileRoute } from '@tanstack/react-router'
 import { getDb } from '#/db/index.ts'
 import { battles, wars } from '#/db/schema.ts'
+import { SITE_URL } from '#/lib/site.ts'
 
-async function handle({ request }: { request: Request }) {
-  const origin = new URL(request.url).origin
+async function handle() {
+  const origin = SITE_URL
   const db = getDb()
 
   const [warRows, battleRows, yearRows] = await Promise.all([
