@@ -5,6 +5,7 @@
   "compatibility_date": "2026-06-26",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "preview_urls": false,
   "observability": {
     "enabled": true,
   },
