@@ -3,6 +3,7 @@ import { orpc } from '#/orpc/client.ts'
 import { useQuery } from '@tanstack/react-query'
 import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
 import { Pagination } from '#/components/pagination.tsx'
+import { itemListJsonLd, jsonLdScript } from '#/lib/jsonld.ts'
 import { parsePageParam } from '#/lib/pagination.ts'
 import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
@@ -43,6 +44,18 @@ export const Route = createFileRoute('/battles/')({
     links: [
       { rel: 'canonical', href: absoluteUrl('/battles', match.search.page) },
     ],
+    scripts: loaderData
+      ? [
+          jsonLdScript(
+            itemListJsonLd(
+              loaderData.items.map((b) => ({
+                name: `Battle of ${b.name}`,
+                url: absoluteUrl(`/battles/${b.id}`),
+              })),
+            ),
+          ),
+        ]
+      : [],
   }),
   component: BattlesPage,
 })

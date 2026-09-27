@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
 import { useQuery } from '@tanstack/react-query'
 import { formatYear, formatLatitude, formatLongitude } from '#/lib/format.ts'
+import { breadcrumbJsonLd, jsonLdScript } from '#/lib/jsonld.ts'
 import { absoluteUrl } from '#/lib/site.ts'
 import { ArrowUpRight } from 'lucide-react'
 
@@ -23,28 +24,75 @@ export const Route = createFileRoute('/battles/$battleId')({
     }
     return result
   },
-  head: ({ loaderData, params }) => ({
-    meta: loaderData
-      ? [
-          {
-            title: `Battle of ${loaderData.name} (${loaderData.year}) — War History Archive`,
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return { meta: [] }
+    const description = `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}`
+
+    return {
+      meta: [
+        {
+          title: `Battle of ${loaderData.name} (${loaderData.year}) — War History Archive`,
+        },
+        { name: 'description', content: description },
+        { property: 'og:title', content: `Battle of ${loaderData.name}` },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'article' },
+        {
+          property: 'og:url',
+          content: absoluteUrl(`/battles/${params.battleId}`),
+        },
+      ],
+      links: [
+        { rel: 'canonical', href: absoluteUrl(`/battles/${params.battleId}`) },
+      ],
+      scripts: [
+        jsonLdScript(
+          breadcrumbJsonLd([
+            { name: 'Wars', url: absoluteUrl('/') },
+            ...(loaderData.war
+              ? [
+                  {
+                    name: loaderData.war.name,
+                    url: absoluteUrl(`/wars/${loaderData.war.id}`),
+                  },
+                ]
+              : []),
+            {
+              name: `Battle of ${loaderData.name}`,
+              url: absoluteUrl(`/battles/${loaderData.id}`),
+            },
+          ]),
+        ),
+        jsonLdScript({
+          '@context': 'https://schema.org',
+          '@type': 'Event',
+          name: `Battle of ${loaderData.name}`,
+          url: absoluteUrl(`/battles/${params.battleId}`),
+          description,
+          ...(loaderData.year > 0
+            ? { startDate: String(loaderData.year) }
+            : {}),
+          location: {
+            '@type': 'Place',
+            ...(loaderData.country
+              ? {
+                  name: loaderData.country.name,
+                  address: {
+                    '@type': 'PostalAddress',
+                    addressCountry: loaderData.country.name,
+                  },
+                }
+              : {}),
+            geo: {
+              '@type': 'GeoCoordinates',
+              latitude: loaderData.latitude,
+              longitude: loaderData.longitude,
+            },
           },
-          {
-            name: 'description',
-            content: `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}`,
-          },
-          { property: 'og:title', content: `Battle of ${loaderData.name}` },
-          { property: 'og:type', content: 'article' },
-          {
-            property: 'og:url',
-            content: absoluteUrl(`/battles/${params.battleId}`),
-          },
-        ]
-      : [],
-    links: loaderData
-      ? [{ rel: 'canonical', href: absoluteUrl(`/battles/${params.battleId}`) }]
-      : [],
-  }),
+        }),
+      ],
+    }
+  },
   notFoundComponent: () => (
     <div className="mx-auto max-w-3xl px-6 py-24 text-center">
       <h1 className="font-serif text-4xl">Entry not found</h1>
@@ -76,62 +124,8 @@ function BattleDetail() {
 
   const mapUrl = `https://www.openstreetmap.org/?mlat=${battle.latitude}&mlon=${battle.longitude}#map=9/${battle.latitude}/${battle.longitude}`
 
-  const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Wars',
-        item: absoluteUrl('/'),
-      },
-      ...(battle.war
-        ? [
-            {
-              '@type': 'ListItem',
-              position: 2,
-              name: battle.war.name,
-              item: absoluteUrl(`/wars/${battle.war.id}`),
-            },
-          ]
-        : []),
-      {
-        '@type': 'ListItem',
-        position: battle.war ? 3 : 2,
-        name: `Battle of ${battle.name}`,
-        item: absoluteUrl(`/battles/${battle.id}`),
-      },
-    ],
-  }
-
-  const eventLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: `Battle of ${battle.name}`,
-    ...(battle.year > 0 ? { startDate: String(battle.year) } : {}),
-    location: {
-      '@type': 'Place',
-      ...(battle.country ? { name: battle.country.name } : {}),
-      geo: {
-        '@type': 'GeoCoordinates',
-        latitude: battle.latitude,
-        longitude: battle.longitude,
-      },
-    },
-  }
-
   return (
     <article className="mx-auto max-w-4xl px-6 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventLd) }}
-      />
-
       <Link
         to="/battles"
         className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:underline"

@@ -9,6 +9,7 @@ import {
   CollapsibleTrigger,
 } from '#/components/ui/collapsible'
 import { Pagination } from '#/components/pagination.tsx'
+import { breadcrumbJsonLd, jsonLdScript, WEBSITE_ID } from '#/lib/jsonld.ts'
 import { parsePageParam } from '#/lib/pagination.ts'
 import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
@@ -70,6 +71,25 @@ export const Route = createFileRoute('/wars/$warId')({
           href: absoluteUrl(`/wars/${params.warId}`, match.search.page),
         },
       ],
+      scripts: [
+        jsonLdScript(
+          breadcrumbJsonLd([
+            { name: 'Wars', url: absoluteUrl('/') },
+            {
+              name: loaderData.name,
+              url: absoluteUrl(`/wars/${params.warId}`),
+            },
+          ]),
+        ),
+        jsonLdScript({
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: loaderData.name,
+          url: absoluteUrl(`/wars/${params.warId}`, match.search.page),
+          description: `${stats.battleCount} battles documented, ${span}.`,
+          isPartOf: { '@id': WEBSITE_ID },
+        }),
+      ],
     }
   },
   notFoundComponent: () => (
@@ -119,21 +139,8 @@ function WarDetail() {
       ? `${formatYear(stats.minYear)} — ${formatYear(stats.maxYear)}`
       : 'Unknown dates'
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: war.name,
-    description: `${stats.battleCount} battles documented, ${span}.`,
-    isPartOf: { '@type': 'WebSite', name: 'War History Archive' },
-  }
-
   return (
     <article className="mx-auto max-w-4xl px-6 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
       <Link
         to="/"
         className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/70 hover:underline"
