@@ -8,6 +8,7 @@ import {
 
 import { Navigation } from '../components/navigation'
 import { AppDevtools } from '../components/devtools'
+import { absoluteUrl } from '../lib/site'
 
 import appCss from '../styles.css?url'
 
@@ -35,7 +36,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'A chronological record of armed conflict throughout history.',
       },
       { property: 'og:site_name', content: 'War History Archive' },
-      { name: 'twitter:card', content: 'summary' },
+      { property: 'og:image', content: absoluteUrl('/og-image.jpg') },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:image', content: absoluteUrl('/og-image.jpg') },
       {
         name: 'theme-color',
         content: '#f9f5ec',
@@ -47,7 +50,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         href: appCss,
       },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-      { rel: 'alternate icon', href: '/favicon.ico' },
     ],
   }),
   shellComponent: RootDocument,

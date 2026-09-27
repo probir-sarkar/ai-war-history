@@ -1,9 +1,10 @@
 import '#/polyfill'
 
 import { createFileRoute } from '@tanstack/react-router'
+import { SITE_URL } from '#/lib/site.ts'
 
-async function handle({ request }: { request: Request }) {
-  const origin = new URL(request.url).origin
+async function handle() {
+  const origin = SITE_URL
 
   const body =
     'User-agent: *\n' + 'Disallow:\n' + `\nSitemap: ${origin}/sitemap.xml\n`
