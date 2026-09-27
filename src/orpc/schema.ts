@@ -55,6 +55,18 @@ export const battleWithWarSchema = battleWithRelationsSchema.extend({
   war: warSchema.nullable(),
 })
 
+/** A war plus aggregate stats over its battles (all computed in SQL). */
+export const warOverviewSchema = z.object({
+  ...warSchema.shape,
+  stats: z.object({
+    battleCount: z.number(),
+    minYear: z.number().nullable(),
+    maxYear: z.number().nullable(),
+    combatants: z.array(z.string()),
+    theatres: z.array(z.string()),
+  }),
+})
+
 /** Wraps a list schema with the pagination metadata every list returns. */
 export const paginated = <T extends z.ZodType>(item: T) =>
   z.object({

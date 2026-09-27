@@ -23,7 +23,9 @@ export const battles = pgTable(
   (t) => [
     unique().on(t.name, t.year),
     index().on(t.year),
-    index().on(t.warId),
+    // Composite covers warId equality AND the (year, id) sort used when
+    // listing a war's battles, so the index serves filter + order together.
+    index().on(t.warId, t.year, t.id),
     index().on(t.countryId),
     index().on(t.winnerId),
     index().on(t.loserId),

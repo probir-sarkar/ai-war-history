@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { orpc } from '#/orpc/client.ts'
 import { useQuery } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import type { FormEvent } from 'react'
 
 import { Pagination } from '#/components/pagination.tsx'
 import { parsePageParam } from '#/lib/pagination.ts'
+import { absoluteUrl } from '#/lib/site.ts'
 import type { PageSearch } from '#/lib/pagination.ts'
 
 interface IndexSearch extends PageSearch {
@@ -21,21 +22,31 @@ export const Route = createFileRoute('/')({
         : undefined,
   }),
   loaderDeps: ({ search: { page, q } }) => ({ page: page ?? 1, q }),
-  loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
+  loader: async ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
       orpc.homePage.queryOptions({
         input: { page: deps.page, warName: deps.q },
       }),
-    )
-  },
-  head: () => ({
+    ),
+  head: ({ loaderData, match }) => ({
     meta: [
-      { title: 'Wars — War History Archive' },
+      {
+        title:
+          match.search.page && match.search.page > 1
+            ? `Wars (page ${match.search.page}) — War History Archive`
+            : 'Wars — War History Archive',
+      },
       {
         name: 'description',
-        content: 'A chronological record of armed conflict throughout history.',
+        content: loaderData
+          ? `${loaderData.total} documented wars, from antiquity to now — browse by name, year, combatant, and outcome.`
+          : 'A chronological record of armed conflict throughout history.',
       },
+      // Canonical drops the `q` filter so search results don't split indexing.
+      { property: 'og:title', content: 'War History Archive' },
+      { property: 'og:url', content: absoluteUrl('/', match.search.page) },
     ],
+    links: [{ rel: 'canonical', href: absoluteUrl('/', match.search.page) }],
   }),
   component: Index,
 })
@@ -76,6 +87,12 @@ function Index() {
     })
   }
 
+  const handleClear = () => {
+    navigate({
+      search: (prev) => ({ ...prev, q: undefined, page: undefined }),
+    })
+  }
+
   const handlePageChange = (newPage: number) => {
     navigate({
       search: (prev) => ({
@@ -107,7 +124,7 @@ function Index() {
       <section className="py-8 border-b border-border">
         <form
           onSubmit={handleFilterSubmit}
-          className="grid md:grid-cols-[1fr_auto] gap-6 items-end"
+          className="grid md:grid-cols-[1fr_auto_auto] gap-6 items-end"
         >
           <div>
             <label
@@ -119,6 +136,7 @@ function Index() {
             <input
               id="war-search"
               name="q"
+              type="search"
               key={q ?? ''}
               defaultValue={q ?? ''}
               placeholder="War name..."
@@ -132,6 +150,16 @@ function Index() {
             <Search className="w-4 h-4" />
             Filter
           </button>
+          {q && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="flex items-center gap-2 px-4 py-2 border border-border hover:border-foreground text-foreground/70 hover:text-foreground font-mono text-xs uppercase tracking-[0.15em] transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          )}
         </form>
       </section>
 

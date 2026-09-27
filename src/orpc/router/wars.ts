@@ -1,15 +1,21 @@
 import { getDb } from '#/db/index.ts'
 import { os } from '@orpc/server'
 import { z } from 'zod'
-import { battles, wars } from '#/db/schema.ts'
-import { eq, ilike, sql } from 'drizzle-orm'
+import {
+  battles,
+  battlesToParticipants,
+  countries,
+  participants,
+  wars,
+} from '#/db/schema.ts'
+import { and, eq, ilike, sql } from 'drizzle-orm'
 import {
   idParam,
   pageInput,
   pageSizeInput,
   paginated,
   warSchema,
-  battleWithRelationsSchema,
+  warOverviewSchema,
   battleWithWarSchema,
 } from '#/orpc/schema.ts'
 
@@ -20,32 +26,68 @@ const WARS_PER_PAGE = 12
 
 export const getWar = os
   .input(z.object({ warId: idParam }))
-  .output(
-    z
-      .object({
-        ...warSchema.shape,
-        battles: z.array(battleWithRelationsSchema),
-      })
-      .nullable()
-      .optional(),
-  )
-  .handler(async ({ input }) =>
-    getDb().query.wars.findFirst({
-      where: { id: Number(input.warId) },
-      with: {
-        battles: {
-          with: {
-            country: true,
-            winner: true,
-            loser: true,
-            participants: true,
-          },
-          // Stable order so the list never shuffles between visits
-          orderBy: { year: 'asc', id: 'asc' },
-        },
+  .output(warOverviewSchema.nullable().optional())
+  .handler(async ({ input }) => {
+    const db = getDb()
+    const id = Number(input.warId)
+
+    const war = await db.query.wars.findFirst({ where: { id } })
+    if (!war) return null
+
+    // Stats are aggregations over the war's battles; RQB has none, so the
+    // core builder (plus two raw SELECTs) computes them without loading
+    // the battles themselves.
+    const [aggRows, combatantRows, theatreRows] = await Promise.all([
+      db
+        .select({
+          battleCount: sql<number>`count(*)`.mapWith(Number),
+          minYear: sql<number | null>`min(${battles.year})`,
+          maxYear: sql<number | null>`max(${battles.year})`,
+        })
+        .from(battles)
+        .where(eq(battles.warId, id)),
+      db.execute(
+        sql`select distinct name from (
+              select c.name from ${battles} b
+                join ${countries} c on c.id = b.country_id
+                where b.war_id = ${id}
+              union
+              select c.name from ${battles} b
+                join ${countries} c on c.id = b.winner_id
+                where b.war_id = ${id}
+              union
+              select c.name from ${battles} b
+                join ${countries} c on c.id = b.loser_id
+                where b.war_id = ${id}
+              union
+              select p.name from ${battles} b
+                join ${battlesToParticipants} bp on bp.battle_id = b.id
+                join ${participants} p on p.id = bp.participant_id
+                where b.war_id = ${id}
+            ) names order by name`,
+      ),
+      db.execute(
+        sql`select distinct unnest(${battles.theatres}) as name
+            from ${battles}
+            where ${battles.warId} = ${id}
+            order by name`,
+      ),
+    ])
+
+    const agg = aggRows.at(0)
+
+    return {
+      id: war.id,
+      name: war.name,
+      stats: {
+        battleCount: agg?.battleCount ?? 0,
+        minYear: agg?.minYear ?? null,
+        maxYear: agg?.maxYear ?? null,
+        combatants: combatantRows.rows.map((r) => String(r.name)),
+        theatres: theatreRows.rows.map((r) => String(r.name)),
       },
-    }),
-  )
+    }
+  })
 
 export const getBattle = os
   .input(z.object({ battleId: idParam }))
@@ -67,18 +109,31 @@ export const listAllBattles = os
   .input(
     z.object({
       year: z.coerce.number().int().optional(),
+      warId: z.coerce.number().int().optional(),
       page: pageInput,
       pageSize: pageSizeInput,
     }),
   )
   .output(paginated(battleWithWarSchema))
-  .handler(async ({ input: { year, page, pageSize } }) => {
+  .handler(async ({ input: { year, warId, page, pageSize } }) => {
     const db = getDb()
-    const where = year !== undefined ? { year } : undefined
+    const conditions = [
+      ...(year !== undefined ? [eq(battles.year, year)] : []),
+      ...(warId !== undefined ? [eq(battles.warId, warId)] : []),
+    ]
+    // Core-builder condition for $count; the RQB keeps its object filter.
+    const coreWhere = conditions.length > 0 ? and(...conditions) : undefined
+    const rqbWhere =
+      conditions.length > 0
+        ? {
+            ...(year !== undefined && { year }),
+            ...(warId !== undefined && { warId }),
+          }
+        : undefined
 
     const fetchPage = (p: number) =>
       db.query.battles.findMany({
-        where,
+        where: rqbWhere,
         with: {
           country: true,
           winner: true,
@@ -95,10 +150,7 @@ export const listAllBattles = os
     // count is index-backed.
     const [items, total] = await Promise.all([
       fetchPage(page),
-      db.$count(
-        battles,
-        year !== undefined ? eq(battles.year, year) : undefined,
-      ),
+      db.$count(battles, coreWhere),
     ])
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize))

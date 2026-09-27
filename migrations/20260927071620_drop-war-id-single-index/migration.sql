@@ -1,0 +1,1 @@
+DROP INDEX "battles_war_id_index";

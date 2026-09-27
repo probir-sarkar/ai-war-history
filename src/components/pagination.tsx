@@ -16,7 +16,10 @@ export function Pagination({
   if (totalPages <= 1) return null
 
   return (
-    <nav className="flex items-center justify-between pt-8 font-mono text-xs uppercase tracking-[0.18em]">
+    <nav
+      aria-label="Pagination"
+      className="flex items-center justify-between pt-8 font-mono text-xs uppercase tracking-[0.18em]"
+    >
       <button
         type="button"
         disabled={page <= 1}
