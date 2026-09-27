@@ -7,7 +7,6 @@ import {
 } from '@tanstack/react-router'
 
 import { Navigation } from '../components/navigation'
-import { AppDevtools } from '../components/devtools'
 import { absoluteUrl } from '../lib/site'
 
 import appCss from '../styles.css?url'
@@ -112,7 +111,6 @@ function RootDocument() {
         <main id="main-content">
           <Outlet />
         </main>
-        <AppDevtools />
         <Scripts />
       </body>
     </html>
