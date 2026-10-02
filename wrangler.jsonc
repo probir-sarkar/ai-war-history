@@ -17,6 +17,6 @@
     },
   ],
   "placement": {
-    "mode": "smart",
+    "region": "aws:eu-central-1",
   },
 }
