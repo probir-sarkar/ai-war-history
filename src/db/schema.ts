@@ -1,5 +1,7 @@
 import { index, pgEnum, pgTable, primaryKey, unique } from 'drizzle-orm/pg-core'
 
+import type { BattleCasualties } from '../orpc/schema'
+
 export const theatresEnum = pgEnum('theatres', ['Air', 'Land', 'Sea'])
 export const battles = pgTable(
   'battles',
@@ -12,6 +14,8 @@ export const battles = pgTable(
     scale: t.integer('scale'),
     massacre: t.boolean(),
     theatres: theatresEnum('theatres').array(),
+    summary: t.text('summary'),
+    casualties: t.jsonb('casualties').$type<BattleCasualties>(),
     countryId: t.integer('country_id').references(() => countries.id),
     winnerId: t.integer('winner_id').references(() => countries.id),
     loserId: t.integer('loser_id').references(() => countries.id),
@@ -35,6 +39,7 @@ export const battles = pgTable(
 export const wars = pgTable('wars', (t) => ({
   id: t.serial().primaryKey(),
   name: t.text('name').notNull().unique(),
+  summary: t.text('summary'),
 }))
 
 export const countries = pgTable('countries', (t) => ({

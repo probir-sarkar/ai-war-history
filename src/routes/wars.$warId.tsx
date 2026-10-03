@@ -52,7 +52,9 @@ export const Route = createFileRoute('/wars/$warId')({
         },
         {
           name: 'description',
-          content: `History of ${loaderData.name}: ${stats.battleCount} battles from ${span}, with combatants, theatres, locations, and outcomes.`,
+          content:
+            loaderData.summary ??
+            `History of ${loaderData.name}: ${stats.battleCount} battles from ${span}, with combatants, theatres, locations, and outcomes.`,
         },
         { property: 'og:title', content: loaderData.name },
         {
@@ -156,6 +158,15 @@ function WarDetail() {
           {war.name}
         </h1>
       </header>
+
+      {/* Overview — generated summary */}
+      {war.summary && (
+        <section className="py-10 border-b border-border">
+          <p className="font-serif text-lg leading-relaxed text-foreground/90 max-w-3xl">
+            {war.summary}
+          </p>
+        </section>
+      )}
 
       {/* Stats grid */}
       <section className="grid md:grid-cols-3 gap-8 py-10 border-b border-border">

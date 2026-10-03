@@ -8,6 +8,8 @@ import { ArrowUpRight } from 'lucide-react'
 
 const RELATED_COUNT = 6
 
+const fmt = (n: number | null) => (n == null ? '—' : n.toLocaleString('en-US'))
+
 export const Route = createFileRoute('/battles/$battleId')({
   loader: async ({ context, params }) => {
     if (!/^\d+$/.test(params.battleId)) throw notFound()
@@ -26,7 +28,9 @@ export const Route = createFileRoute('/battles/$battleId')({
   },
   head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [] }
-    const description = `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}`
+    const description =
+      loaderData.summary ??
+      `Battle of ${loaderData.name}, ${loaderData.year}${loaderData.war ? `. Part of the ${loaderData.war.name}.` : ''}${loaderData.winner ? ` Victor: ${loaderData.winner.name}.` : ''}`
 
     return {
       meta: [
@@ -217,6 +221,60 @@ function BattleDetail() {
           </div>
         )}
       </header>
+
+      {/* Overview — generated summary with estimated casualties */}
+      {battle.summary && (
+        <section className="py-8 border-b border-border">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-4">
+            Overview
+          </h2>
+          <p className="font-serif text-lg leading-relaxed text-foreground/90 max-w-3xl">
+            {battle.summary}
+          </p>
+
+          {battle.casualties &&
+            (battle.casualties.winnerStrength != null ||
+              battle.casualties.loserStrength != null ||
+              battle.casualties.winnerCasualties != null ||
+              battle.casualties.loserCasualties != null) && (
+              <div className="mt-8 max-w-md">
+                <div className="grid grid-cols-[5.5rem_1fr_1fr] gap-x-6 gap-y-2 text-sm">
+                  <span />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Victor
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Defeated
+                  </span>
+
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground self-center">
+                    Strength
+                  </span>
+                  <span className="font-serif tabular-nums">
+                    {fmt(battle.casualties.winnerStrength)}
+                  </span>
+                  <span className="font-serif tabular-nums">
+                    {fmt(battle.casualties.loserStrength)}
+                  </span>
+
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground self-center">
+                    Casualties
+                  </span>
+                  <span className="font-serif tabular-nums">
+                    {fmt(battle.casualties.winnerCasualties)}
+                  </span>
+                  <span className="font-serif tabular-nums">
+                    {fmt(battle.casualties.loserCasualties)}
+                  </span>
+                </div>
+                <div className="mt-4 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Figures AI-estimated · confidence:{' '}
+                  {battle.casualties.confidence}
+                </div>
+              </div>
+            )}
+        </section>
+      )}
 
       {/* Coordinates */}
       <section className="py-8 border-b border-border">

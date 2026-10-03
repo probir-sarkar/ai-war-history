@@ -55,9 +55,35 @@ export const battleWithWarSchema = battleWithRelationsSchema.extend({
   war: warSchema.nullable(),
 })
 
+/**
+ * Estimated personnel strength and casualties for the battle's two sides,
+ * keyed to the battle's winner/loser columns. Numbers are absolute troop
+ * counts; null means unknown. `confidence` grades how well documented the
+ * figures are — anything LLM-generated is at best 'estimated'.
+ */
+export const casualtiesSchema = z.object({
+  winnerStrength: z.number().int().nonnegative().nullable(),
+  loserStrength: z.number().int().nonnegative().nullable(),
+  winnerCasualties: z.number().int().nonnegative().nullable(),
+  loserCasualties: z.number().int().nonnegative().nullable(),
+  confidence: z.enum(['well-documented', 'estimated', 'speculative']),
+})
+
+export type BattleCasualties = z.infer<typeof casualtiesSchema>
+
+/**
+ * Single-battle detail payload: list fields plus the generated summary and
+ * casualty estimates. Lists stay lean — only getBattle carries these.
+ */
+export const battleDetailSchema = battleWithWarSchema.extend({
+  summary: z.string().nullable(),
+  casualties: casualtiesSchema.nullable(),
+})
+
 /** A war plus aggregate stats over its battles (all computed in SQL). */
 export const warOverviewSchema = z.object({
   ...warSchema.shape,
+  summary: z.string().nullable(),
   stats: z.object({
     battleCount: z.number(),
     minYear: z.number().nullable(),

@@ -17,6 +17,7 @@ import {
   warSchema,
   warOverviewSchema,
   battleWithWarSchema,
+  battleDetailSchema,
 } from '#/orpc/schema.ts'
 
 const WARS_PER_PAGE = 12
@@ -79,6 +80,7 @@ export const getWar = os
     return {
       id: war.id,
       name: war.name,
+      summary: war.summary,
       stats: {
         battleCount: agg?.battleCount ?? 0,
         minYear: agg?.minYear ?? null,
@@ -91,7 +93,7 @@ export const getWar = os
 
 export const getBattle = os
   .input(z.object({ battleId: idParam }))
-  .output(battleWithWarSchema.nullable().optional())
+  .output(battleDetailSchema.nullable().optional())
   .handler(async ({ input }) =>
     getDb().query.battles.findFirst({
       where: { id: Number(input.battleId) },
